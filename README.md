@@ -92,10 +92,10 @@ Friday is currently in early development. The initial focus is on the core engin
 
 ### Privacy and Safety
 
-- [ ] Prompt privacy classification
-- [ ] Secret detection
+- [x] Prompt privacy classification
+- [x] Secret detection
 - [ ] Local-first routing for sensitive context
-- [ ] Hosted model blocking for unsafe prompts
+- [x] Hosted model blocking for unsafe prompts
 
 ### Model Routing
 
@@ -265,6 +265,13 @@ Friday now includes a pure model-routing domain layer that recommends blocked,
 local, cheap hosted, strong hosted, or premium routes from task and policy input.
 It makes no provider calls: provider integrations and real AI requests remain
 planned work.
+
+Friday now includes a deterministic privacy safety gate for future AI provider
+integrations. It classifies prompt or project context as public, internal,
+private-repo, sensitive, or secret, detects common secret patterns, and blocks
+secret context before any hosted model handoff. This foundation remains local
+and provider-agnostic: it does not load credentials, call model SDKs, or make
+network requests.
 
 The first milestone is to create a TypeScript CLI that can:
 

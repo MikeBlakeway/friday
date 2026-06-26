@@ -208,3 +208,29 @@ This keeps routing testable, provider-agnostic, privacy-aware and cost-conscious
 **Trade-offs**
 
 The route is only advisory until provider integrations and enforcement gates are implemented.
+
+### 2026-06-26 — Add privacy safety before provider integrations
+
+**Context**
+
+Friday needs deterministic privacy and secret-safety inputs before any hosted
+model provider calls exist.
+
+**Decision**
+
+Friday classifies prompt and project context, detects common secrets, and blocks
+secret context before adding any hosted-model provider calls.
+
+**Reasoning**
+
+Provider routing decisions need a deterministic privacy input before credentials,
+SDKs, or network calls exist. Building the safety gate first makes later
+integrations easier to test and reduces the chance that private repository
+context, sensitive data, or secrets are accidentally sent to hosted models.
+
+**Trade-offs**
+
+The privacy layer remains pure TypeScript with no runtime dependencies or
+provider behavior. Secret context is blocked locally, and future routing
+composition can reuse the existing `PrivacyLevel` vocabulary instead of
+introducing a second policy model.

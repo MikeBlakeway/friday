@@ -4,8 +4,8 @@
 
 - [ ] Design a provider abstraction for local and hosted model implementations.
 - [ ] Add cost-estimation types and a transparent estimate for proposed routes.
-- [ ] Add privacy classification for project context and prompts.
-- [ ] Add secret detection and prevent unsafe hosted-model requests.
+- [ ] Compose privacy classification with model routing so classified requests can
+      be routed or blocked automatically.
 - [ ] Implement an `evidence` command that gathers normalised deterministic
       evidence.
 - [ ] Add Git, TypeScript, test-runner, and Fallow evidence collection behind the
@@ -17,11 +17,6 @@
       output.
 - [ ] Improve the GitHub portfolio presentation with focused examples, screenshots
       or terminal captures, and an accurate roadmap.
-
-## In Progress
-
-- [ ] Refine privacy classification for project context and prompts before provider
-      integrations are introduced.
 
 ## Done
 
@@ -38,6 +33,9 @@
       routing outcomes.
 - [x] Define a model policy that selects the cheapest safe model and describes
       explicit escalation conditions.
+- [x] Added deterministic privacy classification for prompts and project context.
+- [x] Added deterministic secret detection and secret-context blocking before
+      hosted-model integrations.
 
 ## Later
 
