@@ -34,6 +34,12 @@ obvious. Privacy and safety gates take precedence over all cost or quality choic
    hosted; other hosted-safe defaults use strong hosted when cost does not justify a
    cheaper route.
 
+For hosted-safe work that is neither low-complexity draft work nor a planning,
+specification, review, refactor, or build task, the fallback is explicit:
+`minimise-cost` selects cheap hosted, while `balanced` and `quality-first` select
+strong hosted. The quality-first fallback may still be superseded by the permitted
+premium-escalation rules.
+
 The function returns user-facing reasons and warnings. Alternatives will be
 deterministic and only expose routes that are meaningful under the selected policy:
 cheap routes can offer strong hosted; strong routes can offer cheap hosted and
@@ -44,7 +50,9 @@ permitted premium; local and blocked routes expose no hosted alternatives.
 Vitest tests will use a typed default fixture plus narrow overrides. Coverage will
 verify secret blocking, local-only routes, cheap and strong hosted routes, premium
 permission behavior, escalation behavior, minimise-cost behavior, warnings, and
-the empty alternatives invariant for blocked routes.
+the empty alternatives invariant for blocked routes. They will include a
+medium-complexity `ask` task with balanced cost preference selecting strong hosted,
+and a low-complexity `design` task with minimise-cost selecting cheap hosted.
 
 Tests will be written first and observed failing before the policy implementation.
 The completed change will run `npm run typecheck`, `npm run test`, `npm run build`,
