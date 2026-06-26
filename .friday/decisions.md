@@ -190,3 +190,21 @@ routing.
 **Trade-offs**
 
 The early product remains intentionally narrow and command-line oriented.
+
+### 2026-06-26 — Build model routing as a pure policy layer before provider integrations
+
+**Context**
+
+Friday needs to decide which model tier is appropriate before it can safely call any provider.
+
+**Decision**
+
+Implement model routing as a pure, deterministic TypeScript policy that returns route recommendations without making provider calls.
+
+**Reasoning**
+
+This keeps routing testable, provider-agnostic, privacy-aware and cost-conscious before API keys, billing or network calls are introduced.
+
+**Trade-offs**
+
+The route is only advisory until provider integrations and enforcement gates are implemented.

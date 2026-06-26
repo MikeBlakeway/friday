@@ -261,6 +261,11 @@ Friday is a workflow layer for developers who want more control over AI-assisted
 
 Friday is currently at the planning and foundation stage.
 
+Friday now includes a pure model-routing domain layer that recommends blocked,
+local, cheap hosted, strong hosted, or premium routes from task and policy input.
+It makes no provider calls: provider integrations and real AI requests remain
+planned work.
+
 The first milestone is to create a TypeScript CLI that can:
 
 1. initialise project memory

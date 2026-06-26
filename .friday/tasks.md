@@ -2,10 +2,6 @@
 
 ## Backlog
 
-- [ ] Define model-routing domain types for tasks, capabilities, privacy, cost, and
-      routing outcomes.
-- [ ] Define a model policy that selects the cheapest safe model and describes
-      explicit escalation conditions.
 - [ ] Design a provider abstraction for local and hosted model implementations.
 - [ ] Add cost-estimation types and a transparent estimate for proposed routes.
 - [ ] Add privacy classification for project context and prompts.
@@ -24,7 +20,8 @@
 
 ## In Progress
 
-- [ ] Shape the model-routing layer from Friday's own populated project memory.
+- [ ] Refine privacy classification for project context and prompts before provider
+      integrations are introduced.
 
 ## Done
 
@@ -37,6 +34,10 @@
 - [x] Add typed evidence summaries and manual Markdown evidence parsing.
 - [x] Establish Fallow reporting and project quality checks.
 - [x] Populate Friday's own project memory to dogfood the planning workflow.
+- [x] Define model-routing domain types for tasks, capabilities, privacy, cost, and
+      routing outcomes.
+- [x] Define a model policy that selects the cheapest safe model and describes
+      explicit escalation conditions.
 
 ## Later
 
