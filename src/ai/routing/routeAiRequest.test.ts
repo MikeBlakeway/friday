@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { RouteAiRequestInput } from './modelRouting.js'
 import { routeAiRequest } from './routeAiRequest.js'
 
-function createInput(
-  overrides: Partial<RouteAiRequestInput> = {},
-): RouteAiRequestInput {
+function createInput(overrides: Partial<RouteAiRequestInput> = {}): RouteAiRequestInput {
   return {
     taskType: 'ask',
     privacyLevel: 'public',
@@ -148,9 +146,7 @@ describe('routeAiRequest', () => {
   })
 
   it('uses premium for an escalation task when premium models are allowed', () => {
-    const result = routeAiRequest(
-      createInput({ taskType: 'escalate', allowPremiumModels: true }),
-    )
+    const result = routeAiRequest(createInput({ taskType: 'escalate', allowPremiumModels: true }))
 
     expect(result.route).toMatchObject({
       decision: 'use-premium',
@@ -168,9 +164,7 @@ describe('routeAiRequest', () => {
       provider: 'deepseek',
       model: 'deepseek-v4-pro',
     })
-    expect(result.warnings).toContain(
-      'Escalation was requested but premium models are disabled.',
-    )
+    expect(result.warnings).toContain('Escalation was requested but premium models are disabled.')
   })
 
   it('uses cheap hosted for a safe minimise-cost fallback', () => {

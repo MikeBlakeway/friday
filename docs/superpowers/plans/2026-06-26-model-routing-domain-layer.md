@@ -13,6 +13,7 @@
 ### Task 1: Define the routing domain contract
 
 **Files:**
+
 - Create: `src/ai/routing/modelRouting.ts`
 
 - [ ] **Step 1: Add the domain types that the policy tests will import**
@@ -78,6 +79,7 @@ git commit -m "feat(routing): add model routing domain types"
 ### Task 2: Specify route policy behavior with failing tests
 
 **Files:**
+
 - Create: `src/ai/routing/routeAiRequest.test.ts`
 - Test: `src/ai/routing/routeAiRequest.test.ts`
 
@@ -89,9 +91,7 @@ import { describe, expect, it } from 'vitest'
 import type { RouteAiRequestInput } from './modelRouting.js'
 import { routeAiRequest } from './routeAiRequest.js'
 
-function createInput(
-  overrides: Partial<RouteAiRequestInput> = {},
-): RouteAiRequestInput {
+function createInput(overrides: Partial<RouteAiRequestInput> = {}): RouteAiRequestInput {
   return {
     taskType: 'ask',
     privacyLevel: 'public',
@@ -128,6 +128,7 @@ git commit -m "test(routing): specify route recommendation policy"
 ### Task 3: Implement the pure routing policy
 
 **Files:**
+
 - Create: `src/ai/routing/routeAiRequest.ts`
 - Test: `src/ai/routing/routeAiRequest.test.ts`
 
@@ -207,6 +208,7 @@ git commit -m "feat(routing): recommend privacy-aware model routes"
 ### Task 4: Document the capability and record project-memory status
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `.friday/tasks.md`
 - Modify: `.friday/decisions.md`
@@ -239,6 +241,7 @@ git commit -m "docs: record model routing policy layer"
 ### Task 5: Run full verification
 
 **Files:**
+
 - Verify: `src/ai/routing/modelRouting.ts`
 - Verify: `src/ai/routing/routeAiRequest.ts`
 - Verify: `src/ai/routing/routeAiRequest.test.ts`

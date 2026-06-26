@@ -37,23 +37,11 @@ function createResult(
 }
 
 function createCheapHostedRoute(reason: string): AiRoute {
-  return createRoute(
-    'use-cheap-hosted',
-    'deepseek',
-    'cheap-hosted',
-    'deepseek-v4-flash',
-    reason,
-  )
+  return createRoute('use-cheap-hosted', 'deepseek', 'cheap-hosted', 'deepseek-v4-flash', reason)
 }
 
 function createStrongHostedRoute(reason: string): AiRoute {
-  return createRoute(
-    'use-strong-hosted',
-    'deepseek',
-    'strong-hosted',
-    'deepseek-v4-pro',
-    reason,
-  )
+  return createRoute('use-strong-hosted', 'deepseek', 'strong-hosted', 'deepseek-v4-pro', reason)
 }
 
 function createPremiumRoute(reason: string): AiRoute {
@@ -86,7 +74,9 @@ function createStrongHostedResult(
 
 function createPremiumResult(reason: string): RouteAiRequestResult {
   return createResult(createPremiumRoute(reason), [
-    createStrongHostedRoute('A strong hosted route is available when premium escalation is not needed.'),
+    createStrongHostedRoute(
+      'A strong hosted route is available when premium escalation is not needed.',
+    ),
     createCheapHostedRoute('A cheaper hosted route is available for lower-risk work.'),
   ])
 }
@@ -115,7 +105,9 @@ function createLocalResult(input: RouteAiRequestInput): RouteAiRequestResult {
   }
 
   if (input.complexity === 'high' || input.confidenceRequirement === 'high') {
-    warnings.push('The local route may be insufficient for high-complexity or high-confidence work.')
+    warnings.push(
+      'The local route may be insufficient for high-complexity or high-confidence work.',
+    )
   }
 
   const reason =

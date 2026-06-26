@@ -11,12 +11,7 @@ export type AiTaskType =
   | 'ask'
   | 'escalate'
 
-export type PrivacyLevel =
-  | 'public'
-  | 'internal'
-  | 'private-repo'
-  | 'sensitive'
-  | 'secret'
+export type PrivacyLevel = 'public' | 'internal' | 'private-repo' | 'sensitive' | 'secret'
 
 export type TaskComplexity = 'low' | 'medium' | 'high'
 
