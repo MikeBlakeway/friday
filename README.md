@@ -386,6 +386,22 @@ These report files are ignored by git so they can be regenerated locally without
 
 ---
 
+## Deterministic Evidence Providers
+
+Friday will gather deterministic repo evidence before using AI reasoning in planning and review workflows.
+
+Planned evidence sources include:
+
+- Fallow static analysis
+- Git history and change metadata
+- TypeScript diagnostics
+- test runner output
+- manual developer evidence notes
+
+The intended direction is to treat evidence providers as structural project signals, separate from AI model providers.
+
+---
+
 ## License
 
 TBC.
