@@ -407,6 +407,14 @@ The intended direction is to treat evidence providers as structural project sign
 
 ---
 
+## Contributing
+
+Friday is currently an early-stage personal and portfolio project, but it uses a lightweight professional workflow for issues, branches, pull requests and CI.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the branch naming convention and contribution workflow.
+
+---
+
 ## License
 
 TBC.
