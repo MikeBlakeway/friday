@@ -34,3 +34,7 @@ export async function writeFileIfMissing(
 export async function readTextFile(filePath: string): Promise<string> {
   return readFile(filePath, { encoding: 'utf8' })
 }
+
+export async function writeTextFile(filePath: string, content: string): Promise<void> {
+  await writeFile(filePath, content, { encoding: 'utf8' })
+}

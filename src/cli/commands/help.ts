@@ -7,11 +7,11 @@ Usage:
 Available commands:
   init     Initialize Friday project memory in the current project
   status   Show Friday project memory status
+  plan     Create a planning prompt from local project memory
   help     Show this help message
 
 Planned commands:
   brainstorm
-  plan
   spec
   design
   review

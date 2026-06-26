@@ -2,6 +2,7 @@
 
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
+import { runPlanCommand } from './commands/plan.js'
 import { runStatusCommand } from './commands/status.js'
 
 async function main(): Promise<void> {
@@ -19,6 +20,12 @@ async function main(): Promise<void> {
       return
     case 'status':
       await runStatusCommand({ projectRoot })
+      return
+    case 'plan':
+      await runPlanCommand({
+        projectRoot,
+        goal: process.argv.slice(3).join(' '),
+      })
       return
     default:
       throw new Error(`Unknown command: ${command}. Run "friday help" for usage.`)
