@@ -1,37 +1,36 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 
 export async function pathExists(filePath: string): Promise<boolean> {
   try {
-    await access(filePath);
-    return true;
+    await access(filePath)
+    return true
   } catch {
-    return false;
+    return false
   }
 }
 
 export async function ensureDir(dirPath: string): Promise<void> {
-  await mkdir(dirPath, { recursive: true });
+  await mkdir(dirPath, { recursive: true })
 }
 
 export async function writeFileIfMissing(
   filePath: string,
   content: string,
-): Promise<"created" | "skipped"> {
+): Promise<'created' | 'skipped'> {
   try {
-    await writeFile(filePath, content, { encoding: "utf8", flag: "wx" });
-    return "created";
+    await writeFile(filePath, content, { encoding: 'utf8', flag: 'wx' })
+    return 'created'
   } catch (error) {
-    const isAlreadyExists =
-      error instanceof Error && "code" in error && error.code === "EEXIST";
+    const isAlreadyExists = error instanceof Error && 'code' in error && error.code === 'EEXIST'
 
     if (isAlreadyExists) {
-      return "skipped";
+      return 'skipped'
     }
 
-    throw error;
+    throw error
   }
 }
 
 export async function readTextFile(filePath: string): Promise<string> {
-  return readFile(filePath, { encoding: "utf8" });
+  return readFile(filePath, { encoding: 'utf8' })
 }

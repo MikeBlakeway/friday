@@ -1,4 +1,4 @@
-import type { FridayProjectFile } from "./fridayProject.js";
+import type { FridayProjectFile } from './fridayProject.js'
 
 const PROJECT_TEMPLATE = `# Project
 
@@ -36,7 +36,7 @@ const PROJECT_TEMPLATE = `# Project
 ## Open Questions
 
 - Question 1
-`;
+`
 
 const ARCHITECTURE_TEMPLATE = `# Architecture
 
@@ -61,7 +61,7 @@ const ARCHITECTURE_TEMPLATE = `# Architecture
 ## Architecture Decisions
 
 - Link to key entries in decisions.md.
-`;
+`
 
 const DECISIONS_TEMPLATE = `# Decisions
 
@@ -85,7 +85,7 @@ const DECISIONS_TEMPLATE = `# Decisions
 
 - Benefits:
 - Costs:
-`;
+`
 
 const DESIGN_TEMPLATE = `# Design
 
@@ -105,7 +105,7 @@ const DESIGN_TEMPLATE = `# Design
 ## Screens / Flows
 
 - Core flow:
-`;
+`
 
 const TASKS_TEMPLATE = `# Tasks
 
@@ -120,28 +120,28 @@ const TASKS_TEMPLATE = `# Tasks
 ## Done
 
 - [x] Task title
-`;
+`
 
 const NOTES_TEMPLATE = `# Notes
 
 Use this file for project-specific notes that are useful for Friday.
 
 Avoid storing secrets, credentials, tokens, or private personal data here.
-`;
+`
 
 export function getProjectTemplate(fileName: FridayProjectFile): string {
   switch (fileName) {
-    case "project.md":
-      return PROJECT_TEMPLATE;
-    case "architecture.md":
-      return ARCHITECTURE_TEMPLATE;
-    case "decisions.md":
-      return DECISIONS_TEMPLATE;
-    case "design.md":
-      return DESIGN_TEMPLATE;
-    case "tasks.md":
-      return TASKS_TEMPLATE;
-    case "notes.md":
-      return NOTES_TEMPLATE;
+    case 'project.md':
+      return PROJECT_TEMPLATE
+    case 'architecture.md':
+      return ARCHITECTURE_TEMPLATE
+    case 'decisions.md':
+      return DECISIONS_TEMPLATE
+    case 'design.md':
+      return DESIGN_TEMPLATE
+    case 'tasks.md':
+      return TASKS_TEMPLATE
+    case 'notes.md':
+      return NOTES_TEMPLATE
   }
 }

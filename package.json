@@ -15,9 +15,21 @@
     "dev": "tsx src/cli/index.ts",
     "build": "tsc",
     "start": "node dist/cli/index.js",
-    "test": "vitest",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run test && npm run build"
+    "fallow": "fallow --ci",
+    "fallow:dead-code": "fallow dead-code",
+    "fallow:dupes": "fallow dupes",
+    "fallow:health": "fallow health",
+    "fallow:report:dead-code": "mkdir -p reports/fallow && (fallow dead-code --format json > reports/fallow/dead-code.json || true)",
+    "fallow:report:dupes": "mkdir -p reports/fallow && (fallow dupes --format json > reports/fallow/dupes.json || true)",
+    "fallow:report:health": "mkdir -p reports/fallow && (fallow health --format json > reports/fallow/health.json || true)",
+    "fallow:report": "npm run fallow:report:dead-code && npm run fallow:report:dupes && npm run fallow:report:health",
+    "fallow:summary": "node scripts/fallow-summary.mjs",
+    "fallow:review": "npm run fallow:report && npm run fallow:summary",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run typecheck && npm run fallow && npm run test && npm run build"
   },
   "repository": {
     "type": "git",
@@ -40,6 +52,8 @@
   "homepage": "https://github.com/MikeBlakeway/friday#readme",
   "devDependencies": {
     "@types/node": "^26.0.1",
+    "fallow": "^2.102.0",
+    "prettier": "^3.8.4",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"

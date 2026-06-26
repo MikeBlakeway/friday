@@ -17,7 +17,7 @@ Planned commands:
   review
   cost
   escalate
-`;
+`
 
-  console.log(message);
+  console.log(message)
 }

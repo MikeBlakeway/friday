@@ -14,21 +14,21 @@ Modern AI-assisted development is powerful, but messy.
 
 A typical workflow can easily involve:
 
-* ChatGPT or Claude for brainstorming
-* another AI tool for specifications
-* another for design and wireframes
-* Copilot or Codex-style tools for code generation
-* premium models for complex debugging and review
-* repeated manual copying of project context between tools
+- ChatGPT or Claude for brainstorming
+- another AI tool for specifications
+- another for design and wireframes
+- Copilot or Codex-style tools for code generation
+- premium models for complex debugging and review
+- repeated manual copying of project context between tools
 
 This creates real problems for developers:
 
-* project context gets lost between tools
-* premium models are overused for low-risk work
-* AI agents can burn through tokens unnecessarily
-* privacy decisions are often unclear
-* usage cost is difficult to understand
-* developer focus is lost to tool switching
+- project context gets lost between tools
+- premium models are overused for low-risk work
+- AI agents can burn through tokens unnecessarily
+- privacy decisions are often unclear
+- usage cost is difficult to understand
+- developer focus is lost to tool switching
 
 Friday is an attempt to solve that problem with a practical, developer-owned workflow layer.
 
@@ -84,47 +84,47 @@ Friday is currently in early development. The initial focus is on the core engin
 
 ### Foundation
 
-* [ ] Global developer memory
-* [ ] Per-project memory
-* [ ] Project initialisation
-* [ ] Workflow-specific prompt templates
-* [ ] Strongly typed TypeScript architecture
+- [ ] Global developer memory
+- [ ] Per-project memory
+- [ ] Project initialisation
+- [ ] Workflow-specific prompt templates
+- [ ] Strongly typed TypeScript architecture
 
 ### Privacy and Safety
 
-* [ ] Prompt privacy classification
-* [ ] Secret detection
-* [ ] Local-first routing for sensitive context
-* [ ] Hosted model blocking for unsafe prompts
+- [ ] Prompt privacy classification
+- [ ] Secret detection
+- [ ] Local-first routing for sensitive context
+- [ ] Hosted model blocking for unsafe prompts
 
 ### Model Routing
 
-* [ ] Provider-agnostic model interface
-* [ ] Local model support
-* [ ] DeepSeek provider support
-* [ ] OpenAI provider support
-* [ ] Anthropic provider support
-* [ ] Task-based model routing
-* [ ] Premium escalation flow
+- [ ] Provider-agnostic model interface
+- [ ] Local model support
+- [ ] DeepSeek provider support
+- [ ] OpenAI provider support
+- [ ] Anthropic provider support
+- [ ] Task-based model routing
+- [ ] Premium escalation flow
 
 ### Cost Control
 
-* [ ] Token usage logging
-* [ ] Estimated cost tracking
-* [ ] Cost report by task
-* [ ] Cost report by provider/model
-* [ ] Budget rules
+- [ ] Token usage logging
+- [ ] Estimated cost tracking
+- [ ] Cost report by task
+- [ ] Cost report by provider/model
+- [ ] Budget rules
 
 ### Developer Workflows
 
-* [ ] `friday init`
-* [ ] `friday brainstorm`
-* [ ] `friday plan`
-* [ ] `friday spec`
-* [ ] `friday design`
-* [ ] `friday review`
-* [ ] `friday cost`
-* [ ] `friday escalate`
+- [ ] `friday init`
+- [ ] `friday brainstorm`
+- [ ] `friday plan`
+- [ ] `friday spec`
+- [ ] `friday design`
+- [ ] `friday review`
+- [ ] `friday cost`
+- [ ] `friday escalate`
 
 ---
 
@@ -229,16 +229,16 @@ The guiding rule:
 
 Friday is intended to help with:
 
-* brainstorming product ideas
-* shaping technical plans
-* creating implementation specs
-* generating project task lists
-* reviewing changed files
-* explaining failing tests
-* planning refactors
-* summarising pull requests
-* tracking AI usage cost
-* deciding when premium model escalation is justified
+- brainstorming product ideas
+- shaping technical plans
+- creating implementation specs
+- generating project task lists
+- reviewing changed files
+- explaining failing tests
+- planning refactors
+- summarising pull requests
+- tracking AI usage cost
+- deciding when premium model escalation is justified
 
 ---
 
@@ -246,12 +246,12 @@ Friday is intended to help with:
 
 Friday is not intended to be:
 
-* a general chatbot clone
-* a full IDE replacement
-* a fully autonomous coding agent
-* a vendor-specific wrapper
-* a tool that sends entire repositories to hosted models by default
-* a way to avoid senior engineering judgement
+- a general chatbot clone
+- a full IDE replacement
+- a fully autonomous coding agent
+- a vendor-specific wrapper
+- a tool that sends entire repositories to hosted models by default
+- a way to avoid senior engineering judgement
 
 Friday is a workflow layer for developers who want more control over AI-assisted software work.
 
@@ -276,22 +276,22 @@ The first milestone is to create a TypeScript CLI that can:
 
 Planned initial stack:
 
-* TypeScript
-* Node.js
-* CLI-first interface
-* Markdown-based memory
-* JSON/JSONL configuration and logging
-* Vitest for testing
-* Provider-agnostic AI interfaces
+- TypeScript
+- Node.js
+- CLI-first interface
+- Markdown-based memory
+- JSON/JSONL configuration and logging
+- Vitest for testing
+- Provider-agnostic AI interfaces
 
 Future possibilities:
 
-* local model integration
-* hosted model integrations
-* interactive terminal UI
-* desktop or web cockpit
-* voice-enabled workflows
-* richer project memory and retrieval
+- local model integration
+- hosted model integrations
+- interactive terminal UI
+- desktop or web cockpit
+- voice-enabled workflows
+- richer project memory and retrieval
 
 ---
 
@@ -299,44 +299,44 @@ Future possibilities:
 
 ### Milestone 1 — Foundation
 
-* Project structure
-* CLI skeleton
-* Global memory templates
-* Project memory templates
-* Config loading
-* Basic tests
+- Project structure
+- CLI skeleton
+- Global memory templates
+- Project memory templates
+- Config loading
+- Basic tests
 
 ### Milestone 2 — Privacy and Cost
 
-* Privacy classification
-* Secret detection
-* Model pricing config
-* Usage logging
-* Cost reporting
+- Privacy classification
+- Secret detection
+- Model pricing config
+- Usage logging
+- Cost reporting
 
 ### Milestone 3 — Model Routing
 
-* Provider interfaces
-* Routing rules
-* Local provider support
-* Hosted provider support
-* Escalation flow
+- Provider interfaces
+- Routing rules
+- Local provider support
+- Hosted provider support
+- Escalation flow
 
 ### Milestone 4 — Core Workflows
 
-* Brainstorm workflow
-* Planning workflow
-* Specification workflow
-* Code review workflow
-* Cost reporting workflow
+- Brainstorm workflow
+- Planning workflow
+- Specification workflow
+- Code review workflow
+- Cost reporting workflow
 
 ### Milestone 5 — Portfolio Polish
 
-* Architecture documentation
-* Example project
-* Demo screenshots or GIF
-* Public roadmap
-* Usage examples
+- Architecture documentation
+- Example project
+- Demo screenshots or GIF
+- Public roadmap
+- Usage examples
 
 ---
 
@@ -346,14 +346,43 @@ Friday is built from a real developer pain point.
 
 AI tools can be incredibly useful, but experienced developers increasingly need to manage:
 
-* which model to use
-* how much context to provide
-* what data is safe to share
-* whether the output is worth the cost
-* how to keep project knowledge consistent
-* how to avoid tool sprawl
+- which model to use
+- how much context to provide
+- what data is safe to share
+- whether the output is worth the cost
+- how to keep project knowledge consistent
+- how to avoid tool sprawl
 
 Friday explores what a more deliberate AI development workflow could look like.
+
+---
+
+## Fallow Workflow
+
+Friday uses Fallow in two ways:
+
+- Fast gating in `npm run check` via `npm run fallow` (`fallow --ci`)
+- Saved report artifacts for review and triage
+
+Useful commands:
+
+```bash
+npm run fallow                # CI-style pass/fail signal
+npm run fallow:dead-code      # Focused dead code analysis
+npm run fallow:dupes          # Focused duplication analysis
+npm run fallow:health         # Focused complexity/health analysis
+npm run fallow:review         # Generate JSON reports + print short summary
+```
+
+Generated reports are written to:
+
+```txt
+reports/fallow/dead-code.json
+reports/fallow/dupes.json
+reports/fallow/health.json
+```
+
+These report files are ignored by git so they can be regenerated locally without polluting commits.
 
 ---
 
