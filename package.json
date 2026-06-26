@@ -2,14 +2,21 @@
   "name": "friday",
   "version": "1.0.0",
   "description": "**Friday is a local-first AI development cockpit for planning, designing, building and reviewing software with project memory, privacy-aware context handling, model routing and cost control.**",
-  "main": "index.js",
   "directories": {
     "doc": "docs",
     "example": "examples",
     "test": "tests"
   },
+  "type": "module",
+  "bin": {
+    "friday": "./dist/cli/index.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx src/cli/index.ts",
+    "build": "tsc",
+    "start": "node dist/cli/index.js",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -18,7 +25,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/MikeBlakeway/friday/issues"
   },
