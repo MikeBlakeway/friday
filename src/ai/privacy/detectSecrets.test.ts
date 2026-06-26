@@ -53,7 +53,9 @@ describe('detectSecrets', () => {
   })
 
   it('detects AWS access key IDs', () => {
-    const matches = detectSecrets('AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nTEMP_KEY=ASIAIOSFODNN7EXAMPLE')
+    const matches = detectSecrets(
+      'AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nTEMP_KEY=ASIAIOSFODNN7EXAMPLE',
+    )
 
     expect(matches).toEqual(
       expect.arrayContaining([
@@ -64,7 +66,9 @@ describe('detectSecrets', () => {
   })
 
   it('detects private key block headers', () => {
-    const matches = detectSecrets('-----BEGIN OPENSSH PRIVATE KEY-----\nredacted\n-----END OPENSSH PRIVATE KEY-----')
+    const matches = detectSecrets(
+      '-----BEGIN OPENSSH PRIVATE KEY-----\nredacted\n-----END OPENSSH PRIVATE KEY-----',
+    )
 
     expect(matches).toMatchObject([
       {
@@ -125,7 +129,8 @@ describe('detectSecrets', () => {
   })
 
   it('returns multiple matches with index and length metadata', () => {
-    const content = 'one sk-abc123456789xyzDEF456789xyzDEF456789 two ghp_abcdefghijklmnopqrstuvwxyz1234567890'
+    const content =
+      'one sk-abc123456789xyzDEF456789xyzDEF456789 two ghp_abcdefghijklmnopqrstuvwxyz1234567890'
     const matches = detectSecrets(content)
 
     expect(matches).toHaveLength(2)
@@ -139,7 +144,10 @@ describe('detectSecrets', () => {
   })
 
   it('does not expose full matched secret values in previews', () => {
-    const values = ['sk-abc123456789xyzDEF456789xyzDEF456789', 'ghp_abcdefghijklmnopqrstuvwxyz1234567890']
+    const values = [
+      'sk-abc123456789xyzDEF456789xyzDEF456789',
+      'ghp_abcdefghijklmnopqrstuvwxyz1234567890',
+    ]
     const matches = detectSecrets(values.join('\n'))
 
     for (const value of values) {

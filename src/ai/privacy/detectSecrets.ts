@@ -27,7 +27,8 @@ const secretPatterns: SecretPattern[] = [
     kind: 'api-key',
     label: 'AWS access key ID',
     pattern: /\bA(?:KIA|SIA)[A-Z0-9]{16}\b/g,
-    resolveLabel: (match) => (match.startsWith('ASIA') ? 'AWS temporary access key ID' : 'AWS access key ID'),
+    resolveLabel: (match) =>
+      match.startsWith('ASIA') ? 'AWS temporary access key ID' : 'AWS access key ID',
   },
   {
     kind: 'private-key',

@@ -62,8 +62,13 @@ function hasPattern(content: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(content))
 }
 
-function withBaseline(candidate: PrivacyLevel, declaredPrivacyLevel: PrivacyLevel | undefined): PrivacyLevel {
-  return declaredPrivacyLevel === undefined ? candidate : maxPrivacyLevel(candidate, declaredPrivacyLevel)
+function withBaseline(
+  candidate: PrivacyLevel,
+  declaredPrivacyLevel: PrivacyLevel | undefined,
+): PrivacyLevel {
+  return declaredPrivacyLevel === undefined
+    ? candidate
+    : maxPrivacyLevel(candidate, declaredPrivacyLevel)
 }
 
 function buildResult(
@@ -86,7 +91,9 @@ function buildResult(
   }
 }
 
-export function classifyPromptPrivacy(input: PrivacyClassificationInput): PrivacyClassificationResult {
+export function classifyPromptPrivacy(
+  input: PrivacyClassificationInput,
+): PrivacyClassificationResult {
   const secrets = detectSecrets(input.content)
 
   if (secrets.length > 0) {
@@ -101,7 +108,8 @@ export function classifyPromptPrivacy(input: PrivacyClassificationInput): Privac
         },
       ],
       blocked: true,
-      reason: 'Secrets detected. Hosted model use must be blocked until the content is removed or redacted.',
+      reason:
+        'Secrets detected. Hosted model use must be blocked until the content is removed or redacted.',
     }
   }
 
@@ -129,7 +137,8 @@ export function classifyPromptPrivacy(input: PrivacyClassificationInput): Privac
           kind: /\b(?:customer data|personal data|pii|payroll|medical)\b/i.test(input.content)
             ? 'personal-data'
             : 'sensitive-keyword',
-          message: 'Content contains sensitive business, personal, credential, or production-data language.',
+          message:
+            'Content contains sensitive business, personal, credential, or production-data language.',
           severity: 'high',
         },
       ],
@@ -138,13 +147,17 @@ export function classifyPromptPrivacy(input: PrivacyClassificationInput): Privac
     )
   }
 
-  if (hasPattern(input.content, privateRepoPatterns) || hasPattern(input.filePath ?? '', privateRepoPatterns)) {
+  if (
+    hasPattern(input.content, privateRepoPatterns) ||
+    hasPattern(input.filePath ?? '', privateRepoPatterns)
+  ) {
     return buildResult(
       'private-repo',
       [
         {
           kind: 'private-repo-context',
-          message: 'Content appears to include repository code, stack traces, or source-file references.',
+          message:
+            'Content appears to include repository code, stack traces, or source-file references.',
           severity: 'medium',
         },
       ],

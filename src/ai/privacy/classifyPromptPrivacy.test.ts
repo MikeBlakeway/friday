@@ -69,9 +69,7 @@ describe('classifyPromptPrivacy', () => {
 
     expect(result.privacyLevel).toBe('private-repo')
     expect(result.signals).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'private-repo-context' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ kind: 'private-repo-context' })]),
     )
   })
 
@@ -82,9 +80,7 @@ describe('classifyPromptPrivacy', () => {
 
     expect(result.privacyLevel).toBe('internal')
     expect(result.signals).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'internal-context' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ kind: 'internal-context' })]),
     )
   })
 
