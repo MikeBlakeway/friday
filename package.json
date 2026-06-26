@@ -1,7 +1,7 @@
 {
   "name": "friday",
-  "version": "1.0.0",
-  "description": "**Friday is a local-first AI development cockpit for planning, designing, building and reviewing software with project memory, privacy-aware context handling, model routing and cost control.**",
+  "version": "0.1.0",
+  "description": "Friday is a local-first AI development cockpit for planning, designing, building, and reviewing software with project memory, privacy-aware context handling, model routing, and cost control.",
   "directories": {
     "doc": "docs",
     "example": "examples",
@@ -16,15 +16,24 @@
     "build": "tsc",
     "start": "node dist/cli/index.js",
     "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test && npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MikeBlakeway/friday.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "ai",
+    "developer-tools",
+    "cli",
+    "llm",
+    "model-routing",
+    "typescript",
+    "agentic-workflows"
+  ],
+  "author": "Mike Blakeway",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/MikeBlakeway/friday/issues"
   },
