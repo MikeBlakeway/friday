@@ -1,0 +1,32 @@
+{
+  "name": "friday",
+  "version": "1.0.0",
+  "description": "**Friday is a local-first AI development cockpit for planning, designing, building and reviewing software with project memory, privacy-aware context handling, model routing and cost control.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MikeBlakeway/friday.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MikeBlakeway/friday/issues"
+  },
+  "homepage": "https://github.com/MikeBlakeway/friday#readme",
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
