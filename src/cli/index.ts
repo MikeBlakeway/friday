@@ -3,6 +3,7 @@
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runPlanCommand } from './commands/plan.js'
+import { runRouteCommand } from './commands/route.js'
 import { runStatusCommand } from './commands/status.js'
 
 async function main(): Promise<void> {
@@ -26,6 +27,9 @@ async function main(): Promise<void> {
         projectRoot,
         goal: process.argv.slice(3).join(' '),
       })
+      return
+    case 'route':
+      runRouteCommand(process.argv.slice(3))
       return
     default:
       throw new Error(`Unknown command: ${command}. Run "friday help" for usage.`)

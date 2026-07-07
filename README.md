@@ -219,6 +219,19 @@ Tier 4 — Premium model
 Use for final architecture review, difficult debugging, security-sensitive reasoning, and high-confidence escalation.
 ```
 
+### Preview a Route
+
+Use `friday route` to preview the routing decision for a task without calling any AI
+provider:
+
+```bash
+friday route --task review --privacy private-repo --complexity high --confidence standard --cost balanced
+```
+
+The command prints the selected decision, provider, model tier, model, warnings, and
+alternatives. Add `--local-only` to disable hosted models or `--allow-premium` to let
+the policy recommend premium routes when the task earns escalation.
+
 The guiding rule:
 
 > Start with the cheapest safe option and escalate only when the task earns the cost.
