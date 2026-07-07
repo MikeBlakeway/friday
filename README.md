@@ -266,6 +266,12 @@ local, cheap hosted, strong hosted, or premium routes from task and policy input
 It makes no provider calls: provider integrations and real AI requests remain
 planned work.
 
+Friday also includes a provider-agnostic cost estimation domain layer. It
+combines configured per-million input and output token prices with estimated
+token counts to produce deterministic advisory estimates. These estimates are
+not billing records and should be treated as planning guidance until real usage
+telemetry and usage logging exist.
+
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,
 private-repo, sensitive, or secret, detects common secret patterns, and blocks
