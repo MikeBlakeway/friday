@@ -94,7 +94,7 @@ Friday is currently in early development. The initial focus is on the core engin
 
 - [x] Prompt privacy classification
 - [x] Secret detection
-- [ ] Local-first routing for sensitive context
+- [x] Local-first routing for sensitive context
 - [x] Hosted model blocking for unsafe prompts
 
 ### Model Routing
@@ -104,7 +104,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [ ] DeepSeek provider support
 - [ ] OpenAI provider support
 - [ ] Anthropic provider support
-- [ ] Task-based model routing
+- [x] Task-based model routing
 - [ ] Premium escalation flow
 
 ### Cost Control
@@ -272,6 +272,12 @@ private-repo, sensitive, or secret, detects common secret patterns, and blocks
 secret context before any hosted model handoff. This foundation remains local
 and provider-agnostic: it does not load credentials, call model SDKs, or make
 network requests.
+
+Friday can now compose that privacy classification with model routing for a raw
+task prompt. Secret context returns a blocked route with no hosted alternatives,
+sensitive context defaults to a local route, and safety warnings are returned as
+user-facing text. This is still recommendation-only: provider calls remain
+planned work.
 
 The first milestone is to create a TypeScript CLI that can:
 

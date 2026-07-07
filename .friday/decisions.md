@@ -234,3 +234,28 @@ The privacy layer remains pure TypeScript with no runtime dependencies or
 provider behavior. Secret context is blocked locally, and future routing
 composition can reuse the existing `PrivacyLevel` vocabulary instead of
 introducing a second policy model.
+
+### 2026-07-07 — Compose privacy classification before route recommendation
+
+**Context**
+
+Friday now has both a deterministic privacy classifier and a provider-neutral
+route policy, but callers need a single safe entrypoint for raw task prompts.
+
+**Decision**
+
+Compose prompt privacy classification, secret detection, and model routing before
+any provider integration. The composed result exposes the generated route input,
+the classification, the recommendation, and user-facing warnings.
+
+**Reasoning**
+
+Provider calls should only happen after the request has been classified and
+routed through the same privacy vocabulary. This ensures secret context cannot
+produce a hosted route and sensitive context defaults local.
+
+**Trade-offs**
+
+The composed route remains recommendation-only until provider interfaces exist.
+That keeps the boundary deterministic and testable while still giving future
+callers a single policy entrypoint.
