@@ -4,8 +4,6 @@
 
 - [ ] Design a provider abstraction for local and hosted model implementations.
 - [ ] Add cost-estimation types and a transparent estimate for proposed routes.
-- [ ] Compose privacy classification with model routing so classified requests can
-      be routed or blocked automatically.
 - [ ] Implement an `evidence` command that gathers normalised deterministic
       evidence.
 - [ ] Add Git, TypeScript, test-runner, and Fallow evidence collection behind the
@@ -36,6 +34,8 @@
 - [x] Added deterministic privacy classification for prompts and project context.
 - [x] Added deterministic secret detection and secret-context blocking before
       hosted-model integrations.
+- [x] Composed privacy classification with model routing so raw task prompts can
+      be routed, warned, or blocked automatically.
 
 ## Later
 

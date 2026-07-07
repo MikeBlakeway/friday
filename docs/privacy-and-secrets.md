@@ -46,9 +46,13 @@ data-loss-prevention system, and it can miss novel secret formats or classify
 benign text conservatively. It does not call providers, load credentials, read
 environment variables, or make network requests.
 
-## Future routing handoff
+## Routing handoff
 
 The classifier returns the same `PrivacyLevel` vocabulary used by the
-model-routing domain. A later change can compose `classifyPromptPrivacy` with
-`routeAiRequest` so hosted-model routes are blocked or constrained before any
-provider call is attempted.
+model-routing domain. `composeAiRouteRecommendation` composes
+`classifyPromptPrivacy` with `routeAiRequest` so raw task prompts can be routed,
+warned, or blocked before any provider call is attempted.
+
+Secret context cannot produce a hosted route. Sensitive context defaults to a
+local route. The composed result includes the classification, the generated
+`RouteAiRequestInput`, the route recommendation, and user-facing warnings.
