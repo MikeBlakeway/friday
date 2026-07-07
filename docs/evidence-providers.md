@@ -1,34 +1,68 @@
 # Evidence Providers
 
-Friday should gather deterministic evidence before asking an AI model to reason about a project.
+Friday gathers deterministic local evidence before asking an AI model to reason about
+a project. Evidence providers are not AI providers: they are local sources of facts
+that a developer can inspect, edit, and rerun.
 
-Evidence providers are not AI providers.
+Run:
 
-Fallow should be treated as static codebase intelligence, not as an LLM.
+```bash
+friday evidence
+```
 
-Fallow tells Friday what is structurally true about the codebase. The LLM helps Friday decide what to do about it.
+The command creates `.friday/evidence/` and writes an inspectable
+`.friday/evidence/evidence-pack.json`. It does not call an AI provider and does not
+force any provider command to run.
 
-## Evidence Sources
+## Provider Files
 
-Evidence can come from:
+`friday evidence` creates these local files if they are missing:
 
-- Fallow
-- Git
-- TypeScript
-- test runners
-- manual developer notes
+- `manual.md` - structured developer notes discovered by inspection
+- `fallow-summary.md` - Fallow static-code intelligence, added manually for now
+- `git-summary.md` - branch, diff, and history facts from local Git commands
+- `typescript-summary.md` - TypeScript compiler findings
+- `test-summary.md` - test runner findings
 
-## Why This Matters
+Existing files are preserved. Placeholder provider files are ignored by the evidence
+pack until a developer replaces them with real evidence.
 
-The first integration should be lightweight and local.
+## Manual Evidence
 
-Fallow should not be mandatory for `friday plan` yet.
+Manual evidence uses one markdown section per item:
 
-Future evidence should be stored under `.friday/evidence/`.
+```md
+## Medium - Duplicate provider setup
 
-## Planned Workflow Usage
+The provider construction pattern appears in multiple modules.
+```
 
-Evidence will later be used by workflows like:
+Supported severities are `info`, `low`, `medium`, and `high`. Unknown severities are
+treated as `info`.
+
+## Provider Evidence
+
+Provider summary files are intentionally simple markdown files. For this milestone,
+Friday prepares the storage and aggregation architecture without running providers
+automatically.
+
+Suggested local commands:
+
+```bash
+git status -sb
+git diff --stat
+npm run typecheck
+npm test
+npm run fallow
+```
+
+Fallow should be treated as static codebase intelligence, not as an LLM. Fallow tells
+Friday what is structurally true about the codebase; a later AI workflow can help
+decide what to do about it.
+
+## Workflow Usage
+
+Evidence is stored under `.friday/evidence/` so future workflows can reuse it:
 
 - `friday plan`
 - `friday review`
