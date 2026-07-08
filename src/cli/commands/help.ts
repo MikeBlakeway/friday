@@ -7,6 +7,7 @@ Usage:
 Available commands:
   init     Initialize Friday project memory in the current project
   status   Show Friday project memory status
+  evidence Prepare local evidence files and an inspectable evidence pack
   plan     Create a planning prompt from local project memory
   route    Preview Friday's model route for a task without calling a provider
   help     Show this help message

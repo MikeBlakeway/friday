@@ -118,6 +118,7 @@ Friday is currently in early development. The initial focus is on the core engin
 ### Developer Workflows
 
 - [ ] `friday init`
+- [ ] `friday evidence`
 - [ ] `friday brainstorm`
 - [ ] `friday plan`
 - [ ] `friday spec`
@@ -134,6 +135,7 @@ A future Friday workflow may look like this:
 
 ```bash
 friday init
+friday evidence
 friday brainstorm "Build a lightweight AI code review assistant"
 friday plan
 friday spec
@@ -192,9 +194,37 @@ repo/.friday/
   design.md
   tasks.md
   notes.md
+
+  evidence/
+    manual.md
+    fallow-summary.md
+    git-summary.md
+    typescript-summary.md
+    test-summary.md
+    evidence-pack.json
 ```
 
 This memory describes the current project, its goals, architecture, design direction, decisions, and active tasks.
+
+### Local Evidence
+
+Use `friday evidence` after `friday init` to create local evidence provider files
+under `.friday/evidence/`. The command does not call AI providers and does not run
+Fallow, Git, TypeScript, or test commands for you. It prepares inspectable files where
+you can paste deterministic findings, then writes `.friday/evidence/evidence-pack.json`
+from the current local contents.
+
+Manual evidence lives in `.friday/evidence/manual.md` as markdown sections:
+
+```md
+## High - Missing integration test
+
+The auth callback path is not covered by the test suite.
+```
+
+Provider summary files are reserved for local command output or human-written
+summaries from Fallow, Git, TypeScript, and test runners. Placeholder provider files
+are ignored until you replace them with real evidence.
 
 ---
 

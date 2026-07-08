@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { runEvidenceCommand } from './commands/evidence.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runPlanCommand } from './commands/plan.js'
@@ -21,6 +22,9 @@ async function main(): Promise<void> {
       return
     case 'status':
       await runStatusCommand({ projectRoot })
+      return
+    case 'evidence':
+      await runEvidenceCommand({ projectRoot })
       return
     case 'plan':
       await runPlanCommand({
