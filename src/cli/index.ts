@@ -4,6 +4,7 @@ import { runEvidenceCommand } from './commands/evidence.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runPlanCommand } from './commands/plan.js'
+import { runReviewCommand } from './commands/review.js'
 import { runRouteCommand } from './commands/route.js'
 import { runStatusCommand } from './commands/status.js'
 
@@ -34,6 +35,12 @@ async function main(): Promise<void> {
       return
     case 'route':
       runRouteCommand(process.argv.slice(3))
+      return
+    case 'review':
+      await runReviewCommand({
+        projectRoot,
+        args: process.argv.slice(3),
+      })
       return
     default:
       throw new Error(`Unknown command: ${command}. Run "friday help" for usage.`)
