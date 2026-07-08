@@ -25,6 +25,9 @@ yarn-error.log*
 # Analysis reports
 reports/fallow/*.json
 
+# Friday generated output
+.friday/output/review-prompt.md
+
 # OS
 Thumbs.db
 .DS_Store
