@@ -36,11 +36,19 @@ friday evidence
 friday plan "<goal>"
 friday review --changed
 friday route ...
+friday cost ...
 ```
 
 The MVP should make it clear what local context was loaded, what evidence was
 used, what privacy level applies, which route would be recommended, and what the
-estimated cost would be before any future model call.
+estimated cost would be before any future model call. It should write
+inspectable artifacts and should not require API keys, hosted provider
+configuration, provider network calls, usage telemetry, global developer memory,
+a cockpit UI, or autonomous coding.
+
+The example project and architecture diagram should support demo and
+presentation work after the local workflow is coherent. They are not blockers
+for proving the local workflow engine itself.
 
 ## Product Principles
 
@@ -53,6 +61,6 @@ estimated cost would be before any future model call.
 
 ## Post-MVP Direction
 
-After the local workflow is coherent, Friday can add automatic evidence
-collection, `friday cost`, usage logging, local model execution, hosted provider
-integrations, richer workflow commands, and eventually a compact cockpit UI.
+After the local workflow is coherent, Friday can add usage logging, local model
+execution, hosted provider integrations, richer workflow commands, global
+developer memory, demo materials, and eventually a compact cockpit UI.

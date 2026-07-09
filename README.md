@@ -78,13 +78,41 @@ Friday is designed to support experienced developers, not hide engineering decis
 
 ---
 
+## MVP Definition
+
+Friday's MVP is a no-provider local workflow engine. It should prove the
+developer-owned workflow before adding hosted provider execution, API keys,
+network calls, usage telemetry, global memory, cockpit UI, or autonomous coding.
+
+The MVP-critical command path is:
+
+```bash
+friday init
+friday evidence
+friday plan "<goal>"
+friday review --changed
+friday route ...
+friday cost ...
+```
+
+This path should gather local project memory and deterministic evidence, apply
+privacy and secret-safety policy, recommend a model route, estimate advisory
+cost, and write inspectable artifacts. It must not require API keys or call an
+AI provider.
+
+Demo work such as the example project and architecture diagram matters after the
+local workflow is coherent, so it is positioned as presentation work rather than
+MVP engine scope.
+
+---
+
 ## Planned Features
 
 Friday is currently in early development. The initial focus is on the core engine, not a polished UI.
 
 ### Foundation
 
-- [ ] Global developer memory
+- [ ] Global developer memory (post-MVP)
 - [x] Per-project memory
 - [x] Project initialisation
 - [x] Workflow-specific prompt templates
@@ -100,23 +128,23 @@ Friday is currently in early development. The initial focus is on the core engin
 ### Model Routing
 
 - [x] Provider-agnostic model interface
-- [ ] Local model support
-- [ ] DeepSeek provider support
-- [ ] OpenAI provider support
-- [ ] Anthropic provider support
+- [ ] Local model support (post-MVP)
+- [ ] DeepSeek provider support (post-MVP)
+- [ ] OpenAI provider support (post-MVP)
+- [ ] Anthropic provider support (post-MVP)
 - [x] Task-based model routing
 - [x] Premium route recommendation
-- [ ] Premium execution approval flow
+- [ ] Premium execution approval flow (post-MVP)
 
 ### Cost Control
 
 - [x] Advisory cost estimation domain model
-- [ ] Token usage logging
 - [ ] `friday cost` CLI command
-- [ ] Estimated cost tracking from real usage
-- [ ] Cost report by task
-- [ ] Cost report by provider/model
-- [ ] Budget rules
+- [ ] Token usage logging (post-MVP)
+- [ ] Estimated cost tracking from real usage (post-MVP)
+- [ ] Cost report by task (post-MVP)
+- [ ] Cost report by provider/model (post-MVP)
+- [ ] Budget rules (post-MVP)
 
 ### Developer Workflows
 
@@ -129,13 +157,13 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] `friday review`
 - [x] `friday route`
 - [ ] `friday cost`
-- [ ] `friday escalate`
+- [ ] `friday escalate` (post-MVP)
 
 ---
 
 ## Intended Workflow
 
-The current local workflow looks like this:
+The current local workflow uses the implemented local commands:
 
 ```bash
 friday init
@@ -146,8 +174,9 @@ friday route --task review --privacy private-repo --complexity high --confidence
 ```
 
 This workflow creates inspectable local artefacts and route recommendations. It
-does not call an AI provider. Future workflows may add brainstorming,
-specification, cost reporting, and explicit escalation commands.
+does not call an AI provider. The target MVP adds `friday cost ...` as an
+advisory local estimator, while brainstorming, specification, provider execution,
+usage telemetry, and explicit escalation commands remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -300,6 +329,8 @@ Friday is not intended to be:
 - a full IDE replacement
 - a fully autonomous coding agent
 - a vendor-specific wrapper
+- a hosted provider execution layer in the MVP
+- a telemetry or billing system in the MVP
 - a tool that sends entire repositories to hosted models by default
 - a way to avoid senior engineering judgement
 
@@ -361,13 +392,17 @@ The current MVP direction is a no-provider local workflow engine that can:
 
 1. initialise project memory
 2. load project context
-3. classify request privacy
-4. route a task to an appropriate model
-5. estimate advisory usage cost
-6. create inspectable planning, review, and evidence artefacts
+3. collect deterministic local evidence
+4. classify request privacy and block secret-bearing context
+5. route a task to an appropriate model tier without executing it
+6. estimate advisory usage cost
+7. create inspectable planning, review, cost, and evidence artefacts
 
-Post-MVP work includes global developer memory, automatic evidence collection,
-usage logging, budget reporting, provider execution, and a richer cockpit UI.
+MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
+`friday review`, `friday route`, and `friday cost`. Post-MVP work includes
+global developer memory, usage telemetry, budget reporting, provider execution,
+autonomous coding, example/demo presentation work, architecture-diagram polish,
+and a richer cockpit UI.
 
 ---
 
