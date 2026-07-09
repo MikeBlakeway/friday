@@ -322,6 +322,11 @@ Friday is intended to help with:
 - tracking AI usage cost
 - deciding when premium model escalation is justified
 
+For a small portfolio-friendly walkthrough, see the
+[basic project example](./examples/basic-project/README.md). It shows a sample
+`.friday/` memory folder and the planning prompt output Friday can build from
+that local context.
+
 ---
 
 ## What Friday Is Not
