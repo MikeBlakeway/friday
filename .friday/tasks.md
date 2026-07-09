@@ -2,15 +2,13 @@
 
 ## Backlog
 
-- [ ] Design a provider abstraction for local and hosted model implementations.
-- [ ] Add cost-estimation types and a transparent estimate for proposed routes.
-- [ ] Implement an `evidence` command that gathers normalised deterministic
-      evidence.
+- [ ] Define the MVP as a no-provider local workflow engine.
+- [ ] Integrate privacy classification, route recommendation, and cost estimates
+      into the `plan` and `review` command output.
+- [ ] Implement a `friday cost` command on top of the existing cost-estimation
+      domain model.
 - [ ] Add Git, TypeScript, test-runner, and Fallow evidence collection behind the
       evidence-provider foundation.
-- [ ] Define a review workflow that consumes project memory and evidence.
-- [ ] Polish documentation around local-first boundaries, model policy, and current
-      capability.
 - [ ] Create an example project that demonstrates useful Friday memory and planning
       output.
 - [ ] Improve the GitHub portfolio presentation with focused examples, screenshots
@@ -36,6 +34,13 @@
       hosted-model integrations.
 - [x] Composed privacy classification with model routing so raw task prompts can
       be routed, warned, or blocked automatically.
+- [x] Add provider-agnostic model interfaces and a deterministic mock provider.
+- [x] Add advisory cost-estimation types and deterministic cost calculation.
+- [x] Implement `friday evidence` to prepare evidence provider files and write an
+      inspectable evidence pack.
+- [x] Define `friday review --changed` as a local review-prompt workflow that
+      consumes changed-file context, project memory, and evidence.
+- [x] Reconcile public docs and project memory with the current implemented state.
 
 ## Later
 

@@ -85,10 +85,10 @@ Friday is currently in early development. The initial focus is on the core engin
 ### Foundation
 
 - [ ] Global developer memory
-- [ ] Per-project memory
-- [ ] Project initialisation
-- [ ] Workflow-specific prompt templates
-- [ ] Strongly typed TypeScript architecture
+- [x] Per-project memory
+- [x] Project initialisation
+- [x] Workflow-specific prompt templates
+- [x] Strongly typed TypeScript architecture
 
 ### Privacy and Safety
 
@@ -99,31 +99,35 @@ Friday is currently in early development. The initial focus is on the core engin
 
 ### Model Routing
 
-- [ ] Provider-agnostic model interface
+- [x] Provider-agnostic model interface
 - [ ] Local model support
 - [ ] DeepSeek provider support
 - [ ] OpenAI provider support
 - [ ] Anthropic provider support
 - [x] Task-based model routing
-- [ ] Premium escalation flow
+- [x] Premium route recommendation
+- [ ] Premium execution approval flow
 
 ### Cost Control
 
+- [x] Advisory cost estimation domain model
 - [ ] Token usage logging
-- [ ] Estimated cost tracking
+- [ ] `friday cost` CLI command
+- [ ] Estimated cost tracking from real usage
 - [ ] Cost report by task
 - [ ] Cost report by provider/model
 - [ ] Budget rules
 
 ### Developer Workflows
 
-- [ ] `friday init`
-- [ ] `friday evidence`
+- [x] `friday init`
+- [x] `friday evidence`
 - [ ] `friday brainstorm`
-- [ ] `friday plan`
+- [x] `friday plan`
 - [ ] `friday spec`
 - [ ] `friday design`
-- [ ] `friday review`
+- [x] `friday review`
+- [x] `friday route`
 - [ ] `friday cost`
 - [ ] `friday escalate`
 
@@ -131,20 +135,23 @@ Friday is currently in early development. The initial focus is on the core engin
 
 ## Intended Workflow
 
-A future Friday workflow may look like this:
+The current local workflow looks like this:
 
 ```bash
 friday init
 friday evidence
-friday brainstorm "Build a lightweight AI code review assistant"
-friday plan
-friday spec
+friday plan "Build a lightweight AI code review assistant"
 friday review --changed
-friday cost
-friday escalate review
+friday route --task review --privacy private-repo --complexity high --confidence standard --cost balanced
 ```
 
-The goal is not to replace the developer’s judgement. The goal is to reduce friction, preserve context, manage cost, and make AI-assisted development easier to control.
+This workflow creates inspectable local artefacts and route recommendations. It
+does not call an AI provider. Future workflows may add brainstorming,
+specification, cost reporting, and explicit escalation commands.
+
+The goal is not to replace the developer’s judgement. The goal is to reduce
+friction, preserve context, manage cost, and make AI-assisted development easier
+to control.
 
 ---
 
@@ -302,7 +309,24 @@ Friday is a workflow layer for developers who want more control over AI-assisted
 
 ## Current Status
 
-Friday is currently at the planning and foundation stage.
+Friday is currently an early CLI-first local workflow engine. It can initialise
+and inspect per-project memory, prepare deterministic evidence files, build
+planning and review prompts from local context, preview model routes, classify
+privacy risk, detect common secrets, estimate advisory model costs in the domain
+layer, and define provider-agnostic model contracts. It still does not call real
+AI providers.
+
+Implemented CLI commands:
+
+- `friday init`
+- `friday status`
+- `friday evidence`
+- `friday plan <goal...>`
+- `friday review --changed`
+- `friday route`
+
+Planned CLI commands include `friday cost`, `friday brainstorm`, `friday spec`,
+`friday design`, and `friday escalate`.
 
 Friday now includes a pure model-routing domain layer that recommends blocked,
 local, cheap hosted, strong hosted, or premium routes from task and policy input.
@@ -328,26 +352,34 @@ sensitive context defaults to a local route, and safety warnings are returned as
 user-facing text. This is still recommendation-only: provider calls remain
 planned work.
 
-The first milestone is to create a TypeScript CLI that can:
+Friday also includes provider-neutral interfaces and a deterministic mock
+provider for future model execution tests. Real local and hosted provider
+implementations, API-key loading, streaming, and tool-call execution are not
+implemented.
+
+The current MVP direction is a no-provider local workflow engine that can:
 
 1. initialise project memory
-2. load global and project context
+2. load project context
 3. classify request privacy
 4. route a task to an appropriate model
-5. estimate and log usage cost
-6. support a small number of repeatable workflows
+5. estimate advisory usage cost
+6. create inspectable planning, review, and evidence artefacts
+
+Post-MVP work includes global developer memory, automatic evidence collection,
+usage logging, budget reporting, provider execution, and a richer cockpit UI.
 
 ---
 
 ## Tech Stack
 
-Planned initial stack:
+Current stack:
 
 - TypeScript
 - Node.js
 - CLI-first interface
 - Markdown-based memory
-- JSON/JSONL configuration and logging
+- JSON artefacts for evidence packs
 - Vitest for testing
 - Provider-agnostic AI interfaces
 
@@ -366,36 +398,40 @@ Future possibilities:
 
 ### Milestone 1 — Foundation
 
-- Project structure
-- CLI skeleton
-- Global memory templates
-- Project memory templates
-- Config loading
-- Basic tests
+- [x] Project structure
+- [x] CLI skeleton
+- [ ] Global memory templates
+- [x] Project memory templates
+- [x] Project memory loading
+- [x] Basic tests
 
 ### Milestone 2 — Privacy and Cost
 
-- Privacy classification
-- Secret detection
-- Model pricing config
-- Usage logging
-- Cost reporting
+- [x] Privacy classification
+- [x] Secret detection
+- [x] Advisory cost estimation domain model
+- [ ] Model pricing configuration files
+- [ ] Usage logging
+- [ ] Cost reporting CLI
 
 ### Milestone 3 — Model Routing
 
-- Provider interfaces
-- Routing rules
+- [x] Provider interfaces
+- [x] Routing rules
+- [x] Route preview command
 - Local provider support
 - Hosted provider support
-- Escalation flow
+- Escalation execution flow
 
 ### Milestone 4 — Core Workflows
 
 - Brainstorm workflow
-- Planning workflow
+- [x] Planning prompt workflow
 - Specification workflow
-- Code review workflow
+- [x] Code review prompt workflow
 - Cost reporting workflow
+- [x] Local evidence preparation workflow
+- [ ] Automatic deterministic evidence collection
 
 ### Milestone 5 — Portfolio Polish
 
