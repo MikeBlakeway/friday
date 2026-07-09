@@ -15,7 +15,7 @@ friday evidence
 friday plan "<goal>"
 friday review --changed
 friday route ...
-friday cost ...
+friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
 The engine should gather local project context, write deterministic evidence,
@@ -35,6 +35,7 @@ provider.
 - Common secret detection with redacted previews
 - Pure model-routing policy and route preview command
 - Advisory cost-estimation domain model
+- Advisory cost-estimation CLI command
 - Provider-neutral model interfaces and mock provider
 - Vitest, TypeScript, Prettier, Fallow, and build checks
 
@@ -44,8 +45,7 @@ provider.
 2. Define the MVP explicitly as a no-provider local workflow engine.
 3. Integrate privacy classification, route recommendation, and advisory cost
    estimates into `friday plan` and `friday review`.
-4. Expose the cost-estimation domain through `friday cost`.
-5. Collect deterministic local evidence from Git, TypeScript, tests, and Fallow.
+4. Collect deterministic local evidence from Git, TypeScript, tests, and Fallow.
 
 ## Post-MVP Work
 

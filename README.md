@@ -95,7 +95,7 @@ friday evidence
 friday plan "<goal>"
 friday review --changed
 friday route ...
-friday cost ...
+friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
 This path should gather local project memory and deterministic evidence, apply
@@ -142,7 +142,7 @@ Friday is currently in early development. The initial focus is on the core engin
 ### Cost Control
 
 - [x] Advisory cost estimation domain model
-- [ ] `friday cost` CLI command
+- [x] `friday cost` CLI command
 - [ ] Token usage logging (post-MVP)
 - [ ] Estimated cost tracking from real usage (post-MVP)
 - [ ] Cost report by task (post-MVP)
@@ -159,7 +159,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [ ] `friday design`
 - [x] `friday review`
 - [x] `friday route`
-- [ ] `friday cost`
+- [x] `friday cost`
 - [ ] `friday escalate` (post-MVP)
 
 ---
@@ -174,12 +174,14 @@ friday evidence
 friday plan "Build a lightweight AI code review assistant"
 friday review --changed
 friday route --task review --privacy private-repo --complexity high --confidence standard --cost balanced
+friday cost --provider deepseek --model deepseek-v4-pro --input-tokens 12000 --output-tokens 3000
 ```
 
 This workflow creates inspectable local artefacts and route recommendations. It
-does not call an AI provider. The target MVP adds `friday cost ...` as an
-advisory local estimator, while brainstorming, specification, provider execution,
-usage telemetry, and explicit escalation commands remain post-MVP.
+does not call an AI provider. `friday cost` provides an advisory local estimate
+from configured provider/model pricing and estimated token counts, while
+brainstorming, specification, provider execution, usage telemetry, and explicit
+escalation commands remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -363,20 +365,21 @@ Implemented CLI commands:
 - `friday plan <goal...>`
 - `friday review --changed`
 - `friday route`
+- `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
 
-Planned CLI commands include `friday cost`, `friday brainstorm`, `friday spec`,
-`friday design`, and `friday escalate`.
+Planned CLI commands include `friday brainstorm`, `friday spec`, `friday design`,
+and `friday escalate`.
 
 Friday now includes a pure model-routing domain layer that recommends blocked,
 local, cheap hosted, strong hosted, or premium routes from task and policy input.
 It makes no provider calls: provider integrations and real AI requests remain
 planned work.
 
-Friday also includes a provider-agnostic cost estimation domain layer. It
-combines configured per-million input and output token prices with estimated
-token counts to produce deterministic advisory estimates. These estimates are
-not billing records and should be treated as planning guidance until real usage
-telemetry and usage logging exist.
+Friday also includes a provider-agnostic `friday cost` command backed by the
+cost estimation domain layer. It combines configured per-million input and
+output token prices with estimated token counts to produce deterministic
+advisory estimates. These estimates are not billing records and should be
+treated as planning guidance until real usage telemetry and usage logging exist.
 
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,

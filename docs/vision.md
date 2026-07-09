@@ -20,11 +20,11 @@ Friday currently works as a local command-line tool. It can:
   manual evidence
 - preview a model route from explicit task and policy inputs
 - classify prompt privacy and detect common secrets in pure TypeScript
-- estimate advisory model cost in the domain layer
+- estimate advisory model cost through the `friday cost` command
 - define provider-neutral model interfaces and a deterministic mock provider
 
 Friday does not currently call real AI providers, load API keys, stream model
-output, log real usage, enforce budgets, or expose a `friday cost` command.
+output, log real usage, or enforce budgets.
 
 ## MVP Direction
 
@@ -36,7 +36,7 @@ friday evidence
 friday plan "<goal>"
 friday review --changed
 friday route ...
-friday cost ...
+friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
 The MVP should make it clear what local context was loaded, what evidence was
