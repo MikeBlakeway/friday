@@ -2,7 +2,26 @@
 
 Friday is currently focused on a no-provider local workflow MVP. The immediate
 goal is to make the existing local pieces feel like one coherent product before
-adding model execution.
+adding hosted provider execution, API keys, network calls, usage telemetry,
+global memory, cockpit UI, or autonomous coding.
+
+## MVP Definition
+
+The MVP is a local workflow engine that can run without provider credentials:
+
+```bash
+friday init
+friday evidence
+friday plan "<goal>"
+friday review --changed
+friday route ...
+friday cost ...
+```
+
+The engine should gather local project context, write deterministic evidence,
+apply privacy and secret-safety policy, recommend a model route, estimate
+advisory cost, and leave inspectable artifacts behind. It should not call an AI
+provider.
 
 ## Current Implemented Foundation
 
@@ -27,11 +46,11 @@ adding model execution.
    estimates into `friday plan` and `friday review`.
 4. Expose the cost-estimation domain through `friday cost`.
 5. Collect deterministic local evidence from Git, TypeScript, tests, and Fallow.
-6. Add an example project that demonstrates Friday memory and generated output.
-7. Add a simple architecture diagram that marks current and planned boundaries.
 
 ## Post-MVP Work
 
+- Add an example project that demonstrates Friday memory and generated output.
+- Add a simple architecture diagram that marks current and planned boundaries.
 - Global developer memory and reusable policy files
 - Usage logging and budget rules
 - Local model provider implementation
@@ -39,10 +58,10 @@ adding model execution.
 - Explicit premium escalation and approval flow
 - Brainstorm, spec, design, refactor, and ship workflows
 - Interactive terminal or desktop/web cockpit
+- Autonomous coding
 
 ## Deferred
 
-- Autonomous coding
 - Voice-first interaction
 - Full IDE replacement
 - Sending whole repositories to hosted providers by default
