@@ -50,6 +50,9 @@ The aim is simple:
 
 > Keep project context under developer control, route each task to the cheapest suitable model, and only escalate to premium AI when the task genuinely needs it.
 
+For the current local-first shape and planned extension points, see the
+[architecture diagram](./docs/architecture.md#architecture-diagram).
+
 ---
 
 ## Key Principles
