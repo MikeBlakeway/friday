@@ -3,31 +3,44 @@
 ## Overview
 
 Friday is a local, CLI-first TypeScript application. Its current architecture keeps
-project memory, deterministic evidence, prompt construction, and command handling
-separate so later model routing and provider integrations can be added without
-coupling them to file-system concerns.
+project memory, deterministic evidence, prompt construction, command handling,
+privacy classification, route policy, cost estimation, and provider contracts
+separate so later model execution can be added without coupling provider behavior
+to file-system concerns.
 
 Per-project memory lives in `.friday/` beside the source repository. The CLI reads
-that memory, builds a structured planning prompt, and writes generated artefacts
-back to `.friday/output/`. Friday does not call an AI provider in the current
-implementation.
+that memory, builds structured planning and review prompts, writes generated
+artefacts back to `.friday/output/`, and can preview model-routing decisions.
+Friday does not call a real AI provider in the current implementation.
 
 ## Current Modules
 
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
-  `friday init`, `friday status`, and `friday plan`; other workflow commands are
-  currently placeholders or planned.
+  `friday init`, `friday status`, `friday evidence`, `friday plan`,
+  `friday review`, and `friday route`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
 - **File-system helpers** — provide small async operations for checking paths and
   reading or writing local files.
-- **Evidence providers foundation** — defines typed evidence summaries and known
-  evidence-file names. Manual Markdown evidence parsing is implemented; other
-  provider outputs are planned.
+- **Evidence providers foundation** — defines typed evidence summaries, known
+  evidence-file names, local templates, placeholder filtering, and evidence-pack
+  aggregation. Manual Markdown evidence parsing is implemented; automatic Git,
+  TypeScript, test, and Fallow collection remains planned.
 - **Planning prompt builder** — combines a goal, non-empty project memory, and
   available evidence into a provider-neutral Markdown prompt.
+- **Review prompt builder** — combines local changed-file context, project
+  memory, and evidence into a provider-neutral Markdown review prompt.
+- **Privacy and secret safety** — classifies prompt context as public, internal,
+  private-repo, sensitive, or secret and redacts common secret matches.
+- **Model routing** — recommends blocked, local, cheap hosted, strong hosted, or
+  premium routes from task, privacy, complexity, confidence, and cost inputs.
+- **Cost estimation** — estimates advisory input, output, and total model cost
+  from configured per-million token prices and estimated token counts.
+- **Provider contracts** — define provider-neutral model request, response,
+  usage, capability, and mock-provider interfaces for future execution.
 - **Generated output** — stores planning prompts under
-  `.friday/output/plan-prompt.md` so they are inspectable before any model use.
+  `.friday/output/plan-prompt.md` and review prompts under
+  `.friday/output/review-prompt.md` so they are inspectable before any model use.
 
 ## Data Flow: `friday plan`
 
@@ -43,27 +56,48 @@ implementation.
 6. A developer can review or paste that prompt into a chosen model. Friday makes
    no model request at this stage.
 
+## Data Flow: `friday review --changed`
+
+1. The CLI verifies that `.friday/` exists.
+2. The command reads `git diff HEAD --` and untracked files from the current
+   repository.
+3. The command loads project memory and optional manual evidence.
+4. The review prompt builder formats changed-file diffs, memory, and evidence
+   into `.friday/output/review-prompt.md`.
+5. A developer can inspect the generated prompt before deciding whether to share
+   it with a model.
+
+## Data Flow: `friday route`
+
+1. The CLI parses explicit task, privacy, complexity, confidence, cost, hosted,
+   and premium flags.
+2. The routing policy returns the recommended route, warnings, and alternatives.
+3. The command prints the decision without reading project files or calling a
+   provider.
+
 ## Important Boundaries
 
 - **Project memory versus generated output:** source memory is human-maintained;
   generated prompts are derived artefacts under `.friday/output/`.
 - **Deterministic evidence versus LLM reasoning:** evidence collection and parsing
   should establish facts before an LLM is asked to interpret them.
-- **Core workflow versus AI providers:** planning currently produces a neutral
-  prompt, preserving provider choice and avoiding provider lock-in.
-- **Local context versus hosted services:** future routing must apply privacy and
-  secret checks before any context is sent outside the developer environment.
+- **Core workflow versus AI providers:** planning and review currently produce
+  neutral prompts, preserving provider choice and avoiding provider lock-in.
+- **Local context versus hosted services:** routing and privacy logic exists, but
+  future provider execution must apply those gates before any context is sent
+  outside the developer environment.
 - **Global versus project memory:** global developer preferences and project
   context are conceptually distinct. The current implementation starts only with
   per-project memory in `.friday/`.
 
 ## Future Architecture Areas
 
-- Model-routing domain types, task classification, and a model policy layer.
-- Provider-agnostic interfaces for local and hosted model integrations.
-- Privacy classification, secret detection, and hosted-provider blocking rules.
-- Cost estimation, usage logging, budget policy, and cost reporting.
-- Additional deterministic evidence providers for Git, TypeScript, tests, and
-  Fallow output.
-- Repeatable review, refactoring, and shipping workflows built on the same core
-  memory and evidence boundaries.
+- Wire privacy classification, route recommendation, and cost estimation into
+  `plan` and `review` command output.
+- Add a `friday cost` command on top of the existing cost-estimation domain.
+- Add deterministic evidence collectors for Git, TypeScript, tests, and Fallow.
+- Add real local and hosted provider implementations behind the existing
+  provider interfaces and safety gates.
+- Add usage logging, budget policy, and cost reporting.
+- Add repeatable brainstorming, specification, refactoring, and escalation
+  workflows built on the same core memory and evidence boundaries.

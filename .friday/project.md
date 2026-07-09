@@ -27,10 +27,14 @@ boundaries, and unnecessary cost.
 
 ## Current Stage
 
-Early CLI-first foundation. Friday can initialise and inspect per-project memory,
-build a planning prompt from that memory, and include manually supplied evidence.
-Model routing, privacy classification, cost tracking, and provider integrations are
-not implemented yet.
+Early CLI-first local workflow engine. Friday can initialise and inspect
+per-project memory, prepare local evidence files, build planning and review
+prompts from local context, preview model routes, classify prompt privacy, detect
+common secrets, estimate advisory usage cost in the domain layer, and define
+provider-agnostic model contracts.
+
+Friday still does not call real AI providers, load API keys, stream model output,
+log real provider usage, or expose a `friday cost` command.
 
 ## Core Goals
 
@@ -54,8 +58,8 @@ not implemented yet.
 
 - Runtime: Node.js
 - Language: TypeScript with native ES modules
-- CLI: local Node.js executable, currently built around `init`, `status`, and
-  `plan` commands
+- CLI: local Node.js executable with `init`, `status`, `evidence`, `plan`,
+  `review`, and `route` commands
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`
@@ -66,9 +70,11 @@ not implemented yet.
   complexity?
 - How should privacy classification and secret detection combine before any hosted
   provider request is allowed?
-- Which local and hosted providers best support a provider-agnostic first
+- How should `plan` and `review` compose privacy classification, route
+  recommendation, and cost estimates in a single command output?
+- What is the smallest useful `friday cost` command before real usage telemetry
+  exists?
+- Which deterministic evidence providers should be collected automatically first:
+  Git, TypeScript, tests, Fallow, or all four behind explicit flags?
+- Which local and hosted providers best support a provider-agnostic post-MVP
   integration?
-- What cost-estimation precision is useful before real provider usage telemetry is
-  available?
-- Which workflow should follow planning: evidence collection, review, or model
-  routing?
