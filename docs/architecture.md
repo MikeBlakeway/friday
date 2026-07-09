@@ -8,6 +8,44 @@ That separation is intentional: the current app can produce useful local
 artefacts without provider execution, while future model calls can be added
 behind the existing safety and routing boundaries.
 
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+  Developer[Developer] --> CLI[Friday CLI]
+
+  CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
+  CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, route]
+
+  CurrentProjectMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
+  CurrentEvidence --> EvidencePack[Current: evidence pack<br/>evidence-pack.json]
+  EvidencePack --> PromptBuilders
+  CurrentCommands --> PromptBuilders
+
+  PromptBuilders --> PrivacySafety[Current: privacy classification<br/>and secret detection]
+  CurrentCommands --> RoutePolicy[Current: model routing policy]
+  CurrentCommands --> CostModel[Current: advisory cost model]
+
+  PrivacySafety --> RoutePolicy
+  RoutePolicy --> Recommendation[Current: route recommendation<br/>no provider execution]
+  CostModel --> Recommendation
+  PromptBuilders --> LocalOutputs[Current: inspectable outputs<br/>.friday/output/*]
+
+  PlannedGlobalMemory[Planned: global developer memory<br/>~/.friday/*] -.-> PromptBuilders
+  PlannedCollectors[Planned: automatic evidence collectors<br/>Git, TypeScript, tests, Fallow] -.-> CurrentEvidence
+  Recommendation -.-> PlannedProviders[Planned: provider integrations<br/>local, OpenAI, Anthropic, DeepSeek]
+  PlannedProviders -.-> PlannedUsage[Planned: usage logging<br/>and budget reporting]
+  PlannedUsage -.-> CostModel
+  PlannedCockpit[Planned: richer cockpit UI] -.-> CLI
+```
+
+Solid arrows show the current local-first workflow. Dotted arrows show planned
+extensions. The current system builds local artefacts, classifies privacy risk,
+detects common secrets, recommends model routes, and estimates cost
+advisorially; it does not execute model calls, load provider API keys, log real
+usage, or provide a cockpit UI.
+
 ## Implemented Commands
 
 - `friday init` creates the standard `.friday/` project-memory files.
