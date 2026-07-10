@@ -4,25 +4,52 @@ import { buildEvidencePack } from '../../ai/evidence/buildEvidencePack.js'
 import {
   collectLocalEvidence,
   type EvidenceCommandRunner,
+  formatEvidenceCommand,
+  listLocalEvidenceCommands,
 } from '../../ai/evidence/collectLocalEvidence.js'
 import { FRIDAY_EVIDENCE_DIR, FRIDAY_EVIDENCE_FILES } from '../../ai/evidence/evidenceFiles.js'
 import { EVIDENCE_FILE_TEMPLATES, EVIDENCE_PACK_FILE } from '../../ai/evidence/evidenceTemplates.js'
 import { ensureDir, pathExists, writeFileIfMissing, writeTextFile } from '../../core/fileSystem.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 
-export function parseEvidenceArgs(args: string[]): { collect: boolean } {
-  let collect = false
+const DEFAULT_EVIDENCE_TIMEOUT_MS = 120_000
 
-  for (const arg of args) {
+export function parseEvidenceArgs(args: string[]): { collect: boolean; timeoutMs: number } {
+  let collect = false
+  let timeoutMs = DEFAULT_EVIDENCE_TIMEOUT_MS
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
     if (arg === '--collect') {
       collect = true
+      continue
+    }
+
+    if (arg === '--timeout-ms') {
+      const value = args[index + 1]
+      if (!value) {
+        throw new Error('Missing value for --timeout-ms.')
+      }
+
+      timeoutMs = parseTimeoutMs(value)
+      index += 1
       continue
     }
 
     throw new Error(`Unknown evidence option: ${arg}.`)
   }
 
-  return { collect }
+  return { collect, timeoutMs }
+}
+
+function parseTimeoutMs(value: string): number {
+  const timeoutMs = Number(value)
+
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('--timeout-ms must be a positive integer.')
+  }
+
+  return timeoutMs
 }
 
 function logEvidenceFiles(heading: string, marker: '+' | '-', fileNames: readonly string[]): void {
@@ -45,6 +72,30 @@ function logCollectionResult(collection: {
   console.log('')
   logEvidenceFiles('User-authored provider files preserved:', '-', collection.preserved)
   console.log('')
+}
+
+function logCollectionPlan(timeoutMs: number): void {
+  console.log('Collection will execute these local commands:')
+  for (const command of listLocalEvidenceCommands()) {
+    console.log(`  $ ${formatEvidenceCommand(command)}`)
+  }
+  console.log(`Per-command timeout: ${timeoutMs} ms`)
+  console.log('')
+}
+
+async function withInterruptAbort<T>(run: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController()
+  const interrupt = (): void => controller.abort()
+
+  process.once('SIGINT', interrupt)
+  process.once('SIGTERM', interrupt)
+
+  try {
+    return await run(controller.signal)
+  } finally {
+    process.off('SIGINT', interrupt)
+    process.off('SIGTERM', interrupt)
+  }
 }
 
 export async function runEvidenceCommand(options: {
@@ -77,10 +128,15 @@ export async function runEvidenceCommand(options: {
   }
 
   const collection = commandOptions.collect
-    ? await collectLocalEvidence({
-        projectRoot: options.projectRoot,
-        evidenceDirPath,
-        ...(options.runCommand ? { runCommand: options.runCommand } : {}),
+    ? await withInterruptAbort((signal) => {
+        logCollectionPlan(commandOptions.timeoutMs)
+        return collectLocalEvidence({
+          projectRoot: options.projectRoot,
+          evidenceDirPath,
+          timeoutMs: commandOptions.timeoutMs,
+          signal,
+          ...(options.runCommand ? { runCommand: options.runCommand } : {}),
+        })
       })
     : { collected: [], preserved: [] }
 

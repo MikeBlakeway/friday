@@ -9,6 +9,7 @@ Run:
 ```bash
 friday evidence
 friday evidence --collect
+friday evidence --collect --timeout-ms 30000
 ```
 
 The command creates `.friday/evidence/` and writes an inspectable
@@ -53,7 +54,8 @@ providers explicitly with:
 friday evidence --collect
 ```
 
-Collection executes these commands in the project root:
+Before collection starts, Friday prints the exact local commands it will execute and
+the per-command timeout. Collection executes these commands in the project root:
 
 ```bash
 git status -sb
@@ -63,10 +65,21 @@ npm test
 npm run fallow
 ```
 
-Each provider file records the command, pass/fail status, exit code, standard output,
-and standard error. A failing command is captured in its provider file and does not stop
-the remaining providers or evidence-pack generation. Captured command streams are
-normalized to Unix line endings and truncated at a documented marker if unusually long.
+Each provider file records the command, pass/fail/timeout status, exit code, timeout,
+standard output, and standard error. The default timeout is 120000 ms per command; use
+`--timeout-ms <milliseconds>` to choose a different positive integer. A failing or
+timed-out command is captured in its provider file and does not stop the remaining
+providers or evidence-pack generation. Captured command streams are normalized to Unix
+line endings and truncated at a documented marker if unusually long.
+
+## Trust Boundary
+
+`friday evidence --collect` is intended for repositories you trust enough to run their
+local package scripts. Git commands are fixed, but `npm run typecheck`, `npm test`, and
+`npm run fallow` execute scripts and dependencies from the target repository. Friday
+does not sandbox or containerize those commands. The timeout limits hung or unexpectedly
+long-running commands and records the result as evidence, but it is not a security
+boundary for untrusted code.
 
 To recollect a provider after editing or inspecting it, remove that provider summary
 file first. Friday will recreate and collect it on the next `--collect` run. This
