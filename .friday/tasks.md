@@ -47,6 +47,8 @@
 - [x] Prepare Friday v0.1.0 release packaging and release notes.
 - [x] Add guided LM Studio discovery, model selection, global configuration, and
       optional verification through `friday local setup`.
+- [x] Add one-command local plan and review execution while preserving prompt,
+      result, and usage artefacts.
 
 ## Later
 

@@ -9,6 +9,7 @@ import { runInitCommand } from './commands/init.js'
 import { runLocalSetupCommand } from './commands/localSetup.js'
 import { runPlanCommand } from './commands/plan.js'
 import { runReviewCommand } from './commands/review.js'
+import { runWorkflowCommand } from './commands/run.js'
 import { runRouteCommand } from './commands/route.js'
 import { runStatusCommand } from './commands/status.js'
 
@@ -68,6 +69,12 @@ async function main(): Promise<void> {
     }
     case 'review':
       await runReviewCommand({
+        projectRoot,
+        args: process.argv.slice(3),
+      })
+      return
+    case 'run':
+      await runWorkflowCommand({
         projectRoot,
         args: process.argv.slice(3),
       })
