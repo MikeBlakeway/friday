@@ -131,7 +131,7 @@ Friday is currently in early development. The initial focus is on the core engin
 ### Model Routing
 
 - [x] Provider-agnostic model interface
-- [ ] Local model support (post-MVP)
+- [x] Optional LM Studio local provider adapter
 - [ ] DeepSeek provider support (post-MVP)
 - [ ] OpenAI provider support (post-MVP)
 - [ ] Anthropic provider support (post-MVP)
@@ -209,6 +209,11 @@ friday help
 ```
 
 The CLI does not require API keys and does not call AI providers.
+
+Friday also includes an optional code-level
+[LM Studio local provider adapter](./docs/lm-studio-provider.md) for future
+workflows. It is not constructed by the current CLI commands and does not create
+a hard dependency on LM Studio.
 
 See [Friday v0.1.0 release notes](./docs/releases/v0.1.0.md) for the release
 summary and validation scope.

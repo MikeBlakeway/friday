@@ -36,17 +36,20 @@ flowchart TD
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
-  Recommendation -.-> PlannedProviders[Planned: provider integrations<br/>local, OpenAI, Anthropic, DeepSeek]
+  Recommendation -.-> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
+  Recommendation -.-> PlannedProviders[Planned: hosted provider integrations<br/>OpenAI, Anthropic, DeepSeek]
   PlannedProviders -.-> PlannedUsage[Planned: usage logging<br/>and budget reporting]
   PlannedUsage -.-> CostModel
   PlannedCockpit[Planned: richer cockpit UI] -.-> CLI
 ```
 
-Solid arrows show the current local-first workflow. Dotted arrows show planned
-extensions. The current system builds local artefacts, loads global and project
-memory, classifies privacy risk, detects common secrets, recommends model
-routes, and estimates cost advisorially; it does not execute model calls, load
-provider API keys, log real usage, or provide a cockpit UI.
+Solid arrows show the current local-first workflow. Dotted arrows show optional
+or planned extensions. The current CLI builds local artefacts, loads global and
+project memory, classifies privacy risk, detects common secrets, recommends
+model routes, and estimates cost advisorially; it does not execute model calls,
+load provider API keys, log real usage, or provide a cockpit UI. The provider
+layer includes an optional LM Studio adapter that can be invoked explicitly by
+future workflows behind the same routing and privacy boundaries.
 
 ## Implemented Commands
 
@@ -79,7 +82,8 @@ provider API keys, log real usage, or provide a cockpit UI.
   privacy-plus-routing recommendations.
 - `src/ai/pricing/` owns advisory model cost estimation from token counts and
   per-million token prices.
-- `src/ai/providers/` owns provider-neutral model contracts and the mock provider.
+- `src/ai/providers/` owns provider-neutral model contracts, the mock provider,
+  and the optional LM Studio local provider adapter.
 
 ## Current Data Flow
 
@@ -125,9 +129,10 @@ token counts, then prints deterministic input, output, and total cost estimates.
   exist.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
+- LM Studio execution is optional, local-only, and available only to code paths
+  that explicitly construct the adapter with a base URL and model.
 
 ## Planned Architecture Work
 
 - Add usage logging and budget reporting.
-- Add real local and hosted provider implementations behind the provider
-  contracts.
+- Add hosted provider implementations behind the provider contracts.
