@@ -3,6 +3,7 @@
 import { runEvidenceCommand } from './commands/evidence.js'
 import { runExecuteCommand } from './commands/execute.js'
 import { runCostCommand } from './commands/cost.js'
+import { runDoctorCommand } from './commands/doctor.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runPlanCommand } from './commands/plan.js'
@@ -44,6 +45,14 @@ async function main(): Promise<void> {
     case 'cost':
       runCostCommand(process.argv.slice(3))
       return
+    case 'doctor': {
+      const report = await runDoctorCommand({ projectRoot, args: process.argv.slice(3) })
+
+      if (!report.ready) {
+        process.exitCode = 1
+      }
+      return
+    }
     case 'review':
       await runReviewCommand({
         projectRoot,

@@ -92,6 +92,7 @@ The MVP-critical command path is:
 
 ```bash
 friday init
+friday doctor
 friday evidence
 friday plan "<goal>"
 friday review --changed
@@ -213,6 +214,38 @@ GitHub release asset or a local package tarball rather than the npm registry:
 ```bash
 npm install -g ./friday-0.1.0.tgz
 friday help
+```
+
+Check the installation, current project memory, optional global configuration,
+and LM Studio readiness in one support-friendly report:
+
+```bash
+friday doctor
+```
+
+The normal diagnostic only queries the local OpenAI-compatible `/models`
+endpoint. To also send a small local generation request to the selected model,
+opt in explicitly:
+
+```bash
+friday doctor --test-provider
+```
+
+Example output:
+
+```text
+Friday diagnostics
+
+Project
+✓ .friday project memory found
+✓ Project memory is readable and complete
+
+Local provider
+✓ LM Studio server reachable at http://127.0.0.1:1234/v1
+✓ Model selected: qwen3-coder-14b
+○ Test generation skipped
+
+Friday is ready for local execution.
 ```
 
 For local development from a checkout:
@@ -415,6 +448,7 @@ Implemented CLI commands:
 
 - `friday init`
 - `friday status`
+- `friday doctor [--test-provider]`
 - `friday evidence`
 - `friday plan <goal...>`
 - `friday review --changed`
