@@ -5,8 +5,10 @@ generation. LM Studio can expose local models through an OpenAI-compatible HTTP
 server, and Friday talks to that server only through the provider-neutral
 `AiModelProvider` contract in `src/ai/providers/modelProvider.ts`.
 
-The existing CLI workflow commands still work without LM Studio installed or
-running. They do not construct this adapter automatically.
+The preparation CLI workflow commands still work without LM Studio installed or
+running. `friday execute <prompt-path> --provider local` constructs this adapter
+explicitly and fails before writing an execution result if LM Studio is not
+available.
 
 ## Configuration
 
@@ -52,6 +54,30 @@ unreachable, or returning a non-success HTTP status.
 The first supported path is local text generation. Tool calls, streaming, and
 JSON-mode output are deliberately rejected with clear errors until Friday has a
 workflow that needs them.
+
+## CLI Execution Boundary
+
+`friday plan` and `friday review` prepare inspectable prompt artefacts only. They
+do not call LM Studio.
+
+To execute a prompt, run a separate command:
+
+```bash
+friday execute .friday/output/plan-prompt.md --provider local
+```
+
+The execute command:
+
+- requires the explicit `--provider local` flag;
+- re-runs privacy and secret classification for the prompt file;
+- routes with hosted providers disabled;
+- rejects blocked or secret-bearing content before invoking LM Studio;
+- checks the local provider availability endpoint before generation;
+- writes the assistant response, usage, route, safety result, and advisory local
+  cost estimate to `.friday/output/executions/*.json`.
+
+Unavailable providers, blocked input, and malformed provider output fail without
+modifying the source prompt artefact.
 
 ## Failure Behavior
 
