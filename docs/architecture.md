@@ -17,7 +17,7 @@ flowchart TD
   CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, route, cost]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, execute, route, cost]
 
   CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentProjectMemory --> PromptBuilders
@@ -30,13 +30,16 @@ flowchart TD
   CurrentCommands --> CostModel[Current: advisory cost model]
 
   PrivacySafety --> RoutePolicy
-  RoutePolicy --> Recommendation[Current: route recommendation<br/>no provider execution]
+  RoutePolicy --> Recommendation[Current: route recommendation<br/>explicit execution boundary]
   CostModel --> Recommendation
   PromptBuilders --> LocalOutputs[Current: inspectable outputs<br/>.friday/output/*]
+  LocalOutputs --> ExecuteBoundary[Current: explicit local execution<br/>friday execute --provider local]
+  ExecuteBoundary --> PrivacySafety
+  ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
+  ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
-  Recommendation -.-> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   Recommendation -.-> PlannedProviders[Planned: hosted provider integrations<br/>OpenAI, Anthropic, DeepSeek]
   PlannedProviders -.-> PlannedUsage[Planned: usage logging<br/>and budget reporting]
   PlannedUsage -.-> CostModel
@@ -46,10 +49,11 @@ flowchart TD
 Solid arrows show the current local-first workflow. Dotted arrows show optional
 or planned extensions. The current CLI builds local artefacts, loads global and
 project memory, classifies privacy risk, detects common secrets, recommends
-model routes, and estimates cost advisorially; it does not execute model calls,
-load provider API keys, log real usage, or provide a cockpit UI. The provider
-layer includes an optional LM Studio adapter that can be invoked explicitly by
-future workflows behind the same routing and privacy boundaries.
+model routes, and estimates cost advisorially. Model calls happen only through
+the explicit `friday execute --provider local` boundary; the CLI does not load
+provider API keys, invoke hosted providers, log real usage, or provide a cockpit
+UI. The provider layer includes an optional LM Studio adapter that can be invoked
+explicitly behind the same routing and privacy boundaries.
 
 ## Implemented Commands
 
@@ -66,6 +70,9 @@ future workflows behind the same routing and privacy boundaries.
   files or calling a provider.
 - `friday cost` estimates advisory provider/model cost from estimated token
   counts and built-in pricing.
+- `friday execute <prompt-path> --provider local` executes an existing generated
+  prompt through the explicit local provider boundary and writes an inspectable
+  execution result.
 
 ## Core Modules
 
@@ -119,18 +126,24 @@ the recommendation.
 `friday cost` is advisory. It accepts explicit provider, model, and estimated
 token counts, then prints deterministic input, output, and total cost estimates.
 
+`friday execute` is the only model-calling command. It reads an existing prompt
+artefact, re-runs privacy and secret classification, routes with hosted models
+disabled, requires `--provider local`, checks local provider availability, and
+writes a separate execution result under `.friday/output/executions/`.
+
 ## Boundaries
 
 - Global memory is reusable developer context and policy.
 - Project memory is human-maintained source context.
 - Generated prompts and evidence packs are derived artefacts.
 - Evidence providers are deterministic sources of facts, not AI providers.
-- Routing and cost estimation are advisory until execution and usage logging
-  exist.
+- Routing and cost estimation remain advisory around execution and until usage
+  logging exists.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
-- LM Studio execution is optional, local-only, and available only to code paths
-  that explicitly construct the adapter with a base URL and model.
+- LM Studio execution is optional, local-only, and available only through the
+  explicit `friday execute --provider local` boundary or code paths that
+  explicitly construct the adapter with a base URL and model.
 
 ## Planned Architecture Work
 

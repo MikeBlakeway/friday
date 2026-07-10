@@ -83,9 +83,10 @@ Friday is designed to support experienced developers, not hide engineering decis
 
 ## MVP Definition
 
-Friday's MVP is a no-provider local workflow engine. It should prove the
+Friday's MVP is a local workflow engine with an explicit boundary between
+deterministic preparation and optional local model execution. It should prove the
 developer-owned workflow before adding hosted provider execution, API keys,
-network calls, usage telemetry, global memory, cockpit UI, or autonomous coding.
+usage telemetry, cockpit UI, or autonomous coding.
 
 The MVP-critical command path is:
 
@@ -96,12 +97,15 @@ friday plan "<goal>"
 friday review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
+friday execute .friday/output/plan-prompt.md --provider local
 ```
 
 This path should gather local project memory and deterministic evidence, apply
 privacy and secret-safety policy, recommend a model route, estimate advisory
-cost, and write inspectable artifacts. It must not require API keys or call an
-AI provider.
+cost, and write inspectable artifacts. Preparation commands such as `plan` and
+`review` do not call an AI provider. Model execution only happens through
+`friday execute`, requires an explicit local provider choice, re-runs the safety
+gate, and writes a separate local result artifact.
 
 Demo work such as the example project and architecture diagram matters after the
 local workflow is coherent, so it is positioned as presentation work rather than
@@ -160,6 +164,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] `friday review`
 - [x] `friday route`
 - [x] `friday cost`
+- [x] `friday execute`
 - [ ] `friday escalate` (post-MVP)
 
 ---
@@ -175,13 +180,18 @@ friday plan "Build a lightweight AI code review assistant"
 friday review --changed
 friday route --task review --privacy private-repo --complexity high --confidence standard --cost balanced
 friday cost --provider deepseek --model deepseek-v4-pro --input-tokens 12000 --output-tokens 3000
+friday execute .friday/output/plan-prompt.md --provider local
 ```
 
-This workflow creates inspectable local artefacts and route recommendations. It
-does not call an AI provider. `friday cost` provides an advisory local estimate
+This workflow creates inspectable local artefacts and route recommendations.
+`friday plan` and `friday review` only prepare prompt artefacts by default.
+`friday execute` is a deliberate second step that reads an existing prompt,
+requires `--provider local`, rejects secret or blocked content before provider
+invocation, checks local provider availability, and writes the model result under
+`.friday/output/executions/`. `friday cost` provides an advisory local estimate
 from configured provider/model pricing and estimated token counts, while
-brainstorming, specification, provider execution, usage telemetry, and explicit
-escalation commands remain post-MVP.
+brainstorming, specification, hosted provider execution, usage telemetry, and
+explicit escalation commands remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -208,12 +218,14 @@ npm link
 friday help
 ```
 
-The CLI does not require API keys and does not call AI providers.
+The preparation commands do not require API keys and do not call AI providers.
+`friday execute` can call a locally running LM Studio-compatible endpoint only
+when the user explicitly passes `--provider local`.
 
 Friday also includes an optional code-level
-[LM Studio local provider adapter](./docs/lm-studio-provider.md) for future
-workflows. It is not constructed by the current CLI commands and does not create
-a hard dependency on LM Studio.
+[LM Studio local provider adapter](./docs/lm-studio-provider.md) for the
+explicit local execution command. It does not create a hard dependency on LM
+Studio for preparation, routing, evidence, or cost commands.
 
 See [Friday v0.1.0 release notes](./docs/releases/v0.1.0.md) for the release
 summary and validation scope.

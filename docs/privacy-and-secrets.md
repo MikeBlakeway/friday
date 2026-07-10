@@ -56,3 +56,16 @@ warned, or blocked before any provider call is attempted.
 Secret context cannot produce a hosted route. Sensitive context defaults to a
 local route. The composed result includes the classification, the generated
 `RouteAiRequestInput`, the route recommendation, and user-facing warnings.
+
+## Execution handoff
+
+`friday execute` uses the same classifier immediately before provider
+invocation. It reads an existing generated prompt artefact, classifies the
+current file contents, routes with hosted models disabled, and refuses to invoke
+the local provider when the prompt is classified as `secret` or otherwise
+blocked.
+
+This keeps preparation and execution visibly separate: `plan` and `review`
+create files for inspection, while `execute` is the only command that can call a
+model provider. Execution writes a new JSON result artefact under
+`.friday/output/executions/` and does not overwrite the source prompt.
