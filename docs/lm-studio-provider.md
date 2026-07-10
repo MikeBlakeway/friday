@@ -86,6 +86,12 @@ The check calls the configured `/models` endpoint. It returns
 `{ available: false, message }` instead of throwing when LM Studio is stopped,
 unreachable, or returning a non-success HTTP status.
 
+For an end-to-end support report, run `friday doctor`. It checks the Node.js
+runtime, Friday build/install, project and global memory, provider configuration,
+LM Studio endpoint, and loaded-model selection. It does not generate model output
+unless `friday doctor --test-provider` is passed explicitly. Diagnostics never
+download models, start servers, change configuration, or perform repairs.
+
 ## Generation
 
 `generateResponse()` sends a minimal OpenAI-compatible
