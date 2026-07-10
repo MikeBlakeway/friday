@@ -190,10 +190,14 @@ requires `--provider local`, rejects secret or blocked content before provider
 invocation, checks local provider availability, and writes the model result under
 `.friday/output/executions/`. It also appends metadata-only local usage history
 under `.friday/runtime/execution-log.jsonl`; see
-[local usage logging](./docs/local-usage-logging.md). `friday cost` provides an
-advisory local estimate from configured provider/model pricing and estimated
-token counts, while brainstorming, specification, hosted provider execution, and
-explicit escalation commands remain post-MVP.
+[local usage logging](./docs/local-usage-logging.md). The execute command loads
+optional machine-level provider settings from `~/.friday/providers.json`,
+discovers LM Studio on common localhost endpoints, and selects either the
+configured model or the only loaded model. It does not require a `local-model`
+alias. `friday cost` provides an advisory local estimate from configured
+provider/model pricing and estimated token counts, while brainstorming,
+specification, hosted provider execution, and explicit escalation commands
+remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -229,6 +233,10 @@ Friday also includes an optional code-level
 explicit local execution command. It does not create a hard dependency on LM
 Studio for preparation, routing, evidence, or cost commands.
 
+Local provider configuration is optional and stored outside repositories at
+`~/.friday/providers.json`. See the provider guide for the versioned schema,
+localhost discovery endpoints, and zero/one/multiple-model selection behavior.
+
 See [Friday v0.1.0 release notes](./docs/releases/v0.1.0.md) for the release
 summary and validation scope.
 
@@ -251,6 +259,7 @@ Example:
   model-policy.md
   privacy-policy.md
   cost-policy.md
+  providers.json        # optional machine-level provider configuration
 ```
 
 This memory is optional and reusable across projects. `friday plan` and
@@ -261,6 +270,10 @@ before project memory in generated prompts.
 Global policy sets a floor. Project memory can add stricter privacy or secret
 handling requirements, but it cannot silently weaken a stronger global privacy
 classification. Exact duplicate global/project content is included once.
+
+`providers.json` is configuration rather than memory: prompt builders do not
+include it in generated context, and repository-specific `.friday/` directories
+do not override it.
 
 ### Project Friday Memory
 

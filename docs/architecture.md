@@ -35,6 +35,8 @@ flowchart TD
   PromptBuilders --> LocalOutputs[Current: inspectable outputs<br/>.friday/output/*]
   LocalOutputs --> ExecuteBoundary[Current: explicit local execution<br/>friday execute --provider local]
   ExecuteBoundary --> PrivacySafety
+  ExecuteBoundary --> GlobalProviderConfig[Current: optional machine config<br/>~/.friday/providers.json]
+  GlobalProviderConfig --> CurrentLocalProvider
   ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
 
@@ -54,8 +56,9 @@ the explicit `friday execute --provider local` boundary; the CLI does not load
 provider API keys, invoke hosted providers, upload telemetry, or provide a
 cockpit UI. Local execution metadata can be appended under
 `.friday/runtime/execution-log.jsonl` for routing and outcome analysis. The
-provider layer includes an optional LM Studio adapter that can be invoked
-explicitly behind the same routing and privacy boundaries.
+provider layer includes optional machine-level configuration, localhost
+discovery, deterministic loaded-model selection, and an LM Studio adapter behind
+the same routing and privacy boundaries.
 
 ## Implemented Commands
 
@@ -92,7 +95,8 @@ explicitly behind the same routing and privacy boundaries.
 - `src/ai/pricing/` owns advisory model cost estimation from token counts and
   per-million token prices.
 - `src/ai/providers/` owns provider-neutral model contracts, the mock provider,
-  and the optional LM Studio local provider adapter.
+  global provider configuration, local service discovery and selection, and the
+  optional LM Studio local provider adapter.
 - `src/ai/usage/` owns the local execution log schema, append/read helpers, and
   summary helpers for workflow, provider/model, retry, and escalation counts.
 
@@ -132,12 +136,16 @@ token counts, then prints deterministic input, output, and total cost estimates.
 
 `friday execute` is the only model-calling command. It reads an existing prompt
 artefact, re-runs privacy and secret classification, routes with hosted models
-disabled, requires `--provider local`, checks local provider availability, and
-writes a separate execution result under `.friday/output/executions/`.
+disabled, requires `--provider local`, loads optional configuration from
+`~/.friday/providers.json`, discovers LM Studio at common localhost endpoints,
+selects a loaded model, and writes a separate execution result under
+`.friday/output/executions/`.
 
 ## Boundaries
 
 - Global memory is reusable developer context and policy.
+- Global provider configuration is optional machine state and is never merged
+  into project memory or prompt context.
 - Project memory is human-maintained source context.
 - Generated prompts and evidence packs are derived artefacts.
 - Evidence providers are deterministic sources of facts, not AI providers.
@@ -147,7 +155,8 @@ writes a separate execution result under `.friday/output/executions/`.
   detection, routing policy, cost policy, and explicit provider configuration.
 - LM Studio execution is optional, local-only, and available only through the
   explicit `friday execute --provider local` boundary or code paths that
-  explicitly construct the adapter with a base URL and model.
+  explicitly construct the adapter with a base URL and model. Discovery does not
+  download models or start processes.
 
 ## Planned Architecture Work
 

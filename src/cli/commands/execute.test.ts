@@ -78,6 +78,58 @@ describe('parseExecuteArgs', () => {
 })
 
 describe('runExecuteCommand', () => {
+  it('discovers the only loaded model without requiring global configuration or a local-model alias', async () => {
+    const { projectRoot } = await createPromptProject()
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), 'friday-execute-home-'))
+    tempDirs.push(homeDir)
+    const calls: Array<{ url: string; init?: RequestInit }> = []
+
+    const output = await captureConsoleOutput(() =>
+      runExecuteCommand({
+        projectRoot,
+        homeDir,
+        args: ['.friday/output/plan-prompt.md', '--provider', 'local'],
+        providerFetch: async (url, init) => {
+          calls.push(init === undefined ? { url } : { url, init })
+
+          if (url.endsWith('/models')) {
+            return {
+              ok: true,
+              status: 200,
+              statusText: 'OK',
+              async json() {
+                return { data: [{ id: 'qwen3-coder-14b' }] }
+              },
+            }
+          }
+
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            async json() {
+              return {
+                choices: [
+                  {
+                    message: { content: 'Use the discovered local model.' },
+                    finish_reason: 'stop',
+                  },
+                ],
+                usage: { prompt_tokens: 8, completion_tokens: 6, total_tokens: 14 },
+              }
+            },
+          }
+        },
+      }),
+    )
+
+    expect(output).toContain('Provider/model: lm-studio/qwen3-coder-14b')
+    const generationCall = calls.find((call) => call.url.endsWith('/chat/completions'))
+    expect(JSON.parse(String(generationCall?.init?.body))).toMatchObject({
+      model: 'qwen3-coder-14b',
+    })
+  })
+
   it('fails clearly when the default local provider is unavailable without modifying the prompt', async () => {
     const { projectRoot, promptPath } = await createPromptProject()
     const originalPrompt = await readFile(promptPath, 'utf8')
