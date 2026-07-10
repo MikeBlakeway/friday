@@ -1,4 +1,5 @@
 import type { EvidenceSeverity, EvidenceSource } from '../evidence/evidence.js'
+import { combineMemoryContext } from '../../core/globalMemory.js'
 import type { PlanningPromptInput, PlanningPromptResult } from './planningPrompt.js'
 
 function toHeadingCase(value: EvidenceSource | EvidenceSeverity): string {
@@ -6,15 +7,16 @@ function toHeadingCase(value: EvidenceSource | EvidenceSeverity): string {
 }
 
 export function buildPlanningPrompt(input: PlanningPromptInput): PlanningPromptResult {
-  const memoryFiles = input.projectMemory.files.filter(
-    (file) => file.exists && file.content.trim().length > 0,
-  )
-  const loadedMemoryFiles = memoryFiles.map((file) => file.fileName)
-  const missingMemoryFiles = input.projectMemory.files
-    .filter((file) => !file.exists)
-    .map((file) => file.fileName)
+  const memoryContext = combineMemoryContext({
+    projectMemory: input.projectMemory,
+    ...(input.globalMemory === undefined ? {} : { globalMemory: input.globalMemory }),
+  })
 
-  const memorySections = memoryFiles.map((file) => `### ${file.fileName}\n\n${file.content.trim()}`)
+  const memorySections = memoryContext.sections.map((file) =>
+    file.source === 'global'
+      ? `### Global: ${file.fileName}\n\n${file.content}`
+      : `### ${file.fileName}\n\n${file.content}`,
+  )
   const evidenceSections = input.evidence.map(
     (evidence) =>
       `### ${toHeadingCase(evidence.source)} — ${toHeadingCase(evidence.severity)} — ${evidence.title}\n\n${evidence.content.trim()}`,
@@ -31,7 +33,7 @@ export function buildPlanningPrompt(input: PlanningPromptInput): PlanningPromptR
     '',
     'You are helping plan the next step for this software project.',
     '',
-    'Use the project memory and evidence below.',
+    'Use the global memory, project memory, and evidence below.',
     '',
     'Prioritise:',
     '',
@@ -46,9 +48,9 @@ export function buildPlanningPrompt(input: PlanningPromptInput): PlanningPromptR
     'Do not invent existing code or project decisions.',
     'If context is missing, say what is missing.',
     '',
-    '## Project Memory',
+    '## Memory',
     '',
-    memorySections.length > 0 ? memorySections.join('\n\n') : 'No project memory was provided.',
+    memorySections.length > 0 ? memorySections.join('\n\n') : 'No memory was provided.',
     '',
     '## Evidence',
     '',
@@ -71,8 +73,13 @@ export function buildPlanningPrompt(input: PlanningPromptInput): PlanningPromptR
 
   return {
     prompt,
-    loadedMemoryFiles,
-    missingMemoryFiles,
+    effectivePrivacyLevel: memoryContext.effectivePrivacyLevel,
+    loadedGlobalMemoryFiles: memoryContext.loadedGlobalMemoryFiles,
+    missingGlobalMemoryFiles: memoryContext.missingGlobalMemoryFiles,
+    loadedMemoryFiles: memoryContext.loadedProjectMemoryFiles,
+    missingMemoryFiles: memoryContext.missingProjectMemoryFiles,
+    skippedDuplicateMemoryFiles: memoryContext.skippedDuplicateMemoryFiles,
+    policyWarnings: memoryContext.policyWarnings,
     evidenceCount: input.evidence.length,
   }
 }

@@ -14,11 +14,13 @@ behind the existing safety and routing boundaries.
 flowchart TD
   Developer[Developer] --> CLI[Friday CLI]
 
+  CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
   CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, route, cost]
 
-  CurrentProjectMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
+  CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
+  CurrentProjectMemory --> PromptBuilders
   CurrentEvidence --> EvidencePack[Current: evidence pack<br/>evidence-pack.json]
   EvidencePack --> PromptBuilders
   CurrentCommands --> PromptBuilders
@@ -32,7 +34,6 @@ flowchart TD
   CostModel --> Recommendation
   PromptBuilders --> LocalOutputs[Current: inspectable outputs<br/>.friday/output/*]
 
-  PlannedGlobalMemory[Planned: global developer memory<br/>~/.friday/*] -.-> PromptBuilders
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
   Recommendation -.-> PlannedProviders[Planned: provider integrations<br/>local, OpenAI, Anthropic, DeepSeek]
@@ -42,10 +43,10 @@ flowchart TD
 ```
 
 Solid arrows show the current local-first workflow. Dotted arrows show planned
-extensions. The current system builds local artefacts, classifies privacy risk,
-detects common secrets, recommends model routes, and estimates cost
-advisorially; it does not execute model calls, load provider API keys, log real
-usage, or provide a cockpit UI.
+extensions. The current system builds local artefacts, loads global and project
+memory, classifies privacy risk, detects common secrets, recommends model
+routes, and estimates cost advisorially; it does not execute model calls, load
+provider API keys, log real usage, or provide a cockpit UI.
 
 ## Implemented Commands
 
@@ -53,10 +54,11 @@ usage, or provide a cockpit UI.
 - `friday status` reports whether the expected project-memory files exist.
 - `friday evidence` prepares `.friday/evidence/` files and writes an
   inspectable `evidence-pack.json`.
-- `friday plan <goal...>` writes `.friday/output/plan-prompt.md` from local
-  project memory and manual evidence.
+- `friday plan <goal...>` writes `.friday/output/plan-prompt.md` from optional
+  global memory, local project memory, and manual evidence.
 - `friday review --changed` writes `.friday/output/review-prompt.md` from git
-  changed-file context, project memory, and manual evidence.
+  changed-file context, optional global memory, project memory, and manual
+  evidence.
 - `friday route` previews the recommended model route without reading project
   files or calling a provider.
 - `friday cost` estimates advisory provider/model cost from estimated token
@@ -64,8 +66,8 @@ usage, or provide a cockpit UI.
 
 ## Core Modules
 
-- `src/core/` owns project memory file names, templates, status inspection,
-  memory loading, and file-system helpers.
+- `src/core/` owns global and project memory file names, project templates,
+  status inspection, memory loading, merge rules, and file-system helpers.
 - `src/cli/commands/` owns command parsing and workflow orchestration.
 - `src/ai/evidence/` owns evidence types, provider file names, templates,
   placeholder filtering, manual evidence parsing, and evidence-pack generation.
@@ -81,10 +83,26 @@ usage, or provide a cockpit UI.
 
 ## Current Data Flow
 
-`friday plan` and `friday review` are local prompt builders. They load project
-memory and evidence, format inspectable Markdown prompts, write generated
-outputs under `.friday/output/`, and print a local AI policy summary with
-privacy, route, and advisory cost information.
+`friday plan` and `friday review` are local prompt builders. They load optional
+global memory from `~/.friday/`, project memory from `repo/.friday/`, and
+evidence, format inspectable Markdown prompts, write generated outputs under
+`.friday/output/`, and print a local AI policy summary with privacy, route, and
+advisory cost information.
+
+Global memory is loaded in a fixed order:
+
+1. `profile.md`
+2. `coding-standards.md`
+3. `privacy-policy.md`
+4. `model-policy.md`
+5. `cost-policy.md`
+
+Global memory is not mandatory. Missing files are reported but do not block the
+workflow. During prompt construction, global sections are placed before project
+sections and exact duplicate content is included once. Global policy establishes
+the minimum privacy floor: project memory may strengthen the effective privacy
+classification, but it cannot weaken a stricter global secret or privacy
+restriction.
 
 `friday evidence` is local and deterministic. It prepares provider files for
 manual evidence, can collect Git, TypeScript, test, and Fallow evidence with
@@ -99,6 +117,7 @@ token counts, then prints deterministic input, output, and total cost estimates.
 
 ## Boundaries
 
+- Global memory is reusable developer context and policy.
 - Project memory is human-maintained source context.
 - Generated prompts and evidence packs are derived artefacts.
 - Evidence providers are deterministic sources of facts, not AI providers.

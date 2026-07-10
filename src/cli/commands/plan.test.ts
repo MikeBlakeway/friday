@@ -21,6 +21,12 @@ async function createTempProject(): Promise<string> {
   return projectRoot
 }
 
+async function createTempHome(): Promise<string> {
+  const homeDir = await mkdtemp(path.join(os.tmpdir(), 'friday-plan-home-'))
+  tempDirs.push(homeDir)
+  return homeDir
+}
+
 async function captureConsoleOutput(action: () => Promise<void>): Promise<string> {
   const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
@@ -41,6 +47,13 @@ afterEach(async () => {
 describe('runPlanCommand', () => {
   it('reports memory, evidence, privacy, route, warnings, and estimated cost', async () => {
     const projectRoot = await createTempProject()
+    const homeDir = await createTempHome()
+    await mkdir(path.join(homeDir, '.friday'), { recursive: true })
+    await writeFile(
+      path.join(homeDir, '.friday', 'coding-standards.md'),
+      '# Standards\n\nPrefer typed TypeScript.',
+      'utf8',
+    )
     await writeFile(
       path.join(projectRoot, FRIDAY_PROJECT_DIR, 'evidence', 'manual.md'),
       `# Manual Evidence
@@ -52,7 +65,7 @@ Use local-first project memory.`,
     )
 
     const output = await captureConsoleOutput(() =>
-      runPlanCommand({ projectRoot, goal: 'Plan the next release milestone' }),
+      runPlanCommand({ projectRoot, homeDir, goal: 'Plan the next release milestone' }),
     )
 
     await expect(
@@ -60,6 +73,9 @@ Use local-first project memory.`,
     ).resolves.toContain('Plan the next release milestone')
     expect(output).toContain('Loaded project memory:')
     expect(output).toContain('✓ .friday/project.md')
+    expect(output).toContain('Global memory:')
+    expect(output).toContain('✓ ~/.friday/coding-standards.md')
+    expect(output).toContain('missing: ~/.friday/profile.md')
     expect(output).toContain('✓ manual evidence loaded: 1 item(s)')
     expect(output).toContain('AI policy:')
     expect(output).toContain('Privacy level: internal')
@@ -72,10 +88,12 @@ Use local-first project memory.`,
 
   it('blocks secret planning context before suggesting a hosted route', async () => {
     const projectRoot = await createTempProject()
+    const homeDir = await createTempHome()
 
     const output = await captureConsoleOutput(() =>
       runPlanCommand({
         projectRoot,
+        homeDir,
         goal: 'Plan with OPENAI_API_KEY=sk-abc123456789xyzDEF456789xyzDEF456789',
       }),
     )
