@@ -6,6 +6,7 @@ import { parseManualEvidence } from '../../ai/evidence/loadManualEvidence.js'
 import { ensureDir, pathExists, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
+import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
 
 const FRIDAY_OUTPUT_DIR = 'output'
 const PLAN_PROMPT_FILE = 'plan-prompt.md'
@@ -31,6 +32,14 @@ export async function runPlanCommand(options: {
     : []
   const projectMemory = await loadProjectMemory(options.projectRoot)
   const result = buildPlanningPrompt({ goal, projectMemory, evidence })
+  const aiWorkflowSummary = buildAiWorkflowSummary({
+    prompt: result.prompt,
+    taskType: 'plan',
+    complexity: 'high',
+    confidenceRequirement: 'standard',
+    costPreference: 'balanced',
+    estimatedOutputTokens: 1200,
+  })
 
   const outputDirPath = path.join(fridayProjectDirPath, FRIDAY_OUTPUT_DIR)
   const outputPath = path.join(outputDirPath, PLAN_PROMPT_FILE)
@@ -61,6 +70,12 @@ export async function runPlanCommand(options: {
   console.log('Output:')
   console.log(`.friday/${FRIDAY_OUTPUT_DIR}/${PLAN_PROMPT_FILE}`)
   console.log('')
+  printAiWorkflowSummary(aiWorkflowSummary)
+  console.log('')
   console.log('Next step:')
-  console.log('Paste this prompt into your chosen AI model, or use a future Friday model route.')
+  if (aiWorkflowSummary.routeSummary.recommendation.route.blocked) {
+    console.log('Remove or redact blocked context before using any AI model route.')
+  } else {
+    console.log('Inspect this prompt and route summary before using the recommended model route.')
+  }
 }
