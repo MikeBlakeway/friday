@@ -95,6 +95,8 @@ friday init
 friday local setup
 friday doctor
 friday evidence
+friday run plan "<goal>"
+friday run review --changed
 friday plan "<goal>"
 friday review --changed
 friday route ...
@@ -104,10 +106,11 @@ friday execute .friday/output/plan-prompt.md --provider local
 
 This path should gather local project memory and deterministic evidence, apply
 privacy and secret-safety policy, recommend a model route, estimate advisory
-cost, and write inspectable artifacts. Preparation commands such as `plan` and
-`review` do not call an AI provider. Model execution only happens through
-`friday execute`, requires an explicit local provider choice, re-runs the safety
-gate, and writes a separate local result artifact.
+cost, and write inspectable artifacts. `friday run` provides a concise local
+execution path while preserving the generated prompt, safety preflight, approval
+boundary, result artifact, and usage log. Preparation commands such as `plan` and
+`review` still do not call an AI provider, and their artifacts can be executed
+separately with `friday execute`.
 
 Demo work such as the example project and architecture diagram matters after the
 local workflow is coherent, so it is positioned as presentation work rather than
@@ -165,6 +168,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [ ] `friday spec`
 - [ ] `friday design`
 - [x] `friday review`
+- [x] `friday run plan` and `friday run review --changed`
 - [x] `friday route`
 - [x] `friday cost`
 - [x] `friday execute`
@@ -180,6 +184,13 @@ The current local workflow uses the implemented local commands:
 friday init
 friday local setup
 friday evidence
+friday run plan "Build a lightweight AI code review assistant"
+friday run review --changed
+```
+
+For inspect-first or scripted workflows, keep preparation and execution separate:
+
+```bash
 friday plan "Build a lightweight AI code review assistant"
 friday review --changed
 friday route --task review --privacy private-repo --complexity high --confidence standard --cost balanced
@@ -191,6 +202,13 @@ This workflow creates inspectable local artefacts and route recommendations.
 `friday local setup` is a one-time, machine-level step that discovers LM Studio,
 selects a loaded model, and writes reusable settings under `~/.friday/`; it does
 not add provider configuration to the current repository.
+`friday run plan` and `friday run review --changed` prepare the same prompt
+artefacts, print a pre-execution policy and cost summary, ask for approval, and
+execute through the configured default local provider/model. Pass `--yes` for
+explicit non-interactive approval. Use `--provider lm-studio` and
+`--model <loaded-model>` to override the configured selection for one run.
+Secret-bearing prompts remain blocked before provider invocation, and missing or
+unavailable provider configuration fails with setup guidance.
 `friday plan` and `friday review` only prepare prompt artefacts by default.
 `friday execute` is a deliberate second step that reads an existing prompt,
 requires `--provider local`, rejects secret or blocked content before provider
@@ -491,6 +509,8 @@ Implemented CLI commands:
 - `friday evidence`
 - `friday plan <goal...>`
 - `friday review --changed`
+- `friday run plan <goal...> [--yes] [--provider lm-studio] [--model <id>]`
+- `friday run review --changed [--yes] [--provider lm-studio] [--model <id>]`
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
 - `friday execute <prompt-path> --provider local`
@@ -538,10 +558,10 @@ The current MVP direction is a no-provider local workflow engine that can:
 7. create inspectable planning, review, cost, route, and evidence artefacts
 
 MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
-`friday review`, `friday route`, and `friday cost`. Post-MVP work includes
-global developer memory, usage telemetry, budget reporting, provider execution,
-autonomous coding, example/demo presentation work, architecture-diagram polish,
-and a richer cockpit UI.
+`friday review`, `friday run`, `friday route`, `friday cost`, and the explicit
+local execution boundary `friday execute --provider local`. Post-MVP work
+includes hosted provider execution, budget reporting, autonomous coding, and a
+richer cockpit UI.
 
 ---
 

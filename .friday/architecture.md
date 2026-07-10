@@ -19,7 +19,7 @@ hosted provider execution is not.
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
   `friday init`, `friday status`, `friday evidence`, `friday plan`,
   `friday review`, `friday route`, `friday cost`, `friday doctor`,
-  `friday local setup`, and `friday execute`.
+  `friday local setup`, `friday run`, and `friday execute`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
 - **File-system helpers** — provide small async operations for checking paths and
@@ -46,6 +46,17 @@ hosted provider execution is not.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
   `.friday/output/review-prompt.md` so they are inspectable before any model use.
+
+## Data Flow: `friday run plan|review`
+
+1. The existing plan or changed-file review workflow writes its normal prompt
+   artefact.
+2. The shared execution preflight re-runs privacy classification, secret
+   blocking, local routing, provider availability, and advisory cost estimation.
+3. Friday prints the selected local provider/model and expected output location,
+   then requires interactive confirmation or the explicit `--yes` flag.
+4. The existing local execution path invokes the provider and writes the normal
+   result artefact and metadata-only usage log.
 
 ## Data Flow: `friday plan`
 
@@ -101,6 +112,9 @@ hosted provider execution is not.
 - **Core workflow versus AI providers:** planning and review currently produce
   neutral prompts plus local route and cost summaries, preserving provider choice
   and avoiding provider lock-in.
+- **Convenience versus inspectability:** `friday run` coordinates preparation and
+  execution but does not bypass prompt artefacts, safety policy, local-only
+  routing, or approval.
 - **Local context versus hosted services:** routing and privacy logic exists, but
   future provider execution must apply those gates before any context is sent
   outside the developer environment.

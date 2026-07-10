@@ -80,6 +80,9 @@ the same routing and privacy boundaries.
 - `friday review --changed` writes `.friday/output/review-prompt.md` from git
   changed-file context, optional global memory, project memory, and manual
   evidence.
+- `friday run plan <goal...>` and `friday run review --changed` reuse those
+  prompt builders, run the shared local execution preflight, require approval,
+  and write the existing result and usage artefacts.
 - `friday route` previews the recommended model route without reading project
   files or calling a provider.
 - `friday cost` estimates advisory provider/model cost from estimated token
@@ -143,6 +146,12 @@ the recommendation.
 `friday cost` is advisory. It accepts explicit provider, model, and estimated
 token counts, then prints deterministic input, output, and total cost estimates.
 
+`friday run` is the convenience orchestration boundary. It prepares the normal
+plan or review prompt, resolves the configured or explicitly overridden LM
+Studio model, reuses the execution safety and cost preflight, prints the route
+summary and expected output location, then requires interactive confirmation or
+`--yes` before invoking the provider.
+
 `friday execute` is the workflow model-calling command. It reads an existing prompt
 artefact, re-runs privacy and secret classification, routes with hosted models
 disabled, requires `--provider local`, loads optional configuration from
@@ -169,10 +178,10 @@ interactive confirmation or an explicit `--start-server` flag.
   logging exists.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
-- LM Studio execution is optional, local-only, and available only through the
-  explicit `friday execute --provider local` boundary or code paths that
-  explicitly construct the adapter with a base URL and model. Discovery does not
-  download models or start processes.
+- LM Studio execution is optional and local-only. It is available through the
+  inspect-first `friday execute --provider local` boundary or the explicit
+  approval boundary in `friday run`; discovery does not download models or start
+  processes.
 
 ## Planned Architecture Work
 

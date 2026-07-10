@@ -16,6 +16,8 @@ type ReadyLmStudioDiscovery = Extract<LmStudioDiscoveryResult, { status: 'ready'
 export interface ResolveLocalModelProviderInput {
   homeDir?: string
   fetch?: LmStudioFetch
+  provider?: string
+  model?: string
 }
 
 export interface ResolvedLocalModelProvider {
@@ -30,7 +32,7 @@ export async function resolveLocalModelProvider(
   const configurationResult = await loadGlobalProviderConfiguration(input.homeDir ?? os.homedir())
   const configuration =
     configurationResult.status === 'loaded' ? configurationResult.configuration : undefined
-  const providerId = configuration?.defaultProvider ?? 'lm-studio'
+  const providerId = input.provider ?? configuration?.defaultProvider ?? 'lm-studio'
 
   if (providerId !== 'lm-studio') {
     throw new Error(
@@ -38,7 +40,19 @@ export async function resolveLocalModelProvider(
     )
   }
 
-  const providerConfiguration = configuration?.providers['lm-studio']
+  const configuredProvider = configuration?.providers['lm-studio']
+  const providerConfiguration =
+    input.model === undefined
+      ? configuredProvider
+      : {
+          ...(configuredProvider?.baseUrl === undefined
+            ? {}
+            : { baseUrl: configuredProvider.baseUrl }),
+          model: input.model,
+          ...(configuredProvider?.autoStart === undefined
+            ? {}
+            : { autoStart: configuredProvider.autoStart }),
+        }
   const discovery = await discoverLmStudioProvider({
     ...(providerConfiguration === undefined ? {} : { configuration: providerConfiguration }),
     ...(input.fetch === undefined ? {} : { fetch: input.fetch }),

@@ -122,4 +122,35 @@ describe('resolveLocalModelProvider', () => {
       'Configured default provider "ollama" is not supported yet. Friday currently discovers lm-studio only.',
     )
   })
+
+  it('allows an explicit supported provider and loaded model to override defaults', async () => {
+    const homeDir = await createTempHome()
+    const globalDirPath = path.join(homeDir, '.friday')
+    await mkdir(globalDirPath, { recursive: true })
+    await writeFile(
+      path.join(globalDirPath, 'providers.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        defaultProvider: 'ollama',
+        providers: {
+          ollama: { baseUrl: 'http://localhost:11434/v1', autoStart: false },
+          'lm-studio': { baseUrl: 'http://localhost:4321/v1', model: 'codestral-22b' },
+        },
+      }),
+      'utf8',
+    )
+
+    const result = await resolveLocalModelProvider({
+      homeDir,
+      provider: 'lm-studio',
+      model: 'qwen3-coder-14b',
+      fetch: createModelsFetch(['qwen3-coder-14b', 'codestral-22b']),
+    })
+
+    expect(result.discovery).toMatchObject({
+      baseUrl: 'http://localhost:4321/v1',
+      selection: 'configured',
+      selectedModel: 'qwen3-coder-14b',
+    })
+  })
 })

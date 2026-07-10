@@ -5,6 +5,7 @@ import { findPricing } from '../pricing/advisoryPricing.js'
 import type { AiUsageCostEstimate } from '../pricing/pricingModel.js'
 import type { PrivacyClassificationResult } from '../privacy/privacyClassification.js'
 import { composeAiRouteRecommendation } from '../routing/composeAiRouteRecommendation.js'
+import type { ComposeAiRouteRecommendationResult } from '../routing/composeAiRouteRecommendation.js'
 import type { AiRoute, AiTaskType, RouteAiRequestResult } from '../routing/modelRouting.js'
 import type {
   AiModelProvider,
@@ -38,6 +39,14 @@ export interface ExecutePromptOptions {
   projectRoot: string
   modelProvider: AvailableLocalModelProvider
   now?: () => Date
+  preparedExecution?: PreparedPromptExecution
+}
+
+export interface PreparedPromptExecution {
+  prompt: string
+  promptArtifact: string
+  routeSummary: ComposeAiRouteRecommendationResult
+  costEstimate: AiUsageCostEstimate
 }
 
 export interface ExecutePromptResult {
@@ -181,24 +190,15 @@ function createArtifactJson(result: ExecutePromptResult): string {
 }
 
 export async function executePrompt(options: ExecutePromptOptions): Promise<ExecutePromptResult> {
-  assertLocalProvider(options.request, options.modelProvider)
-
-  const prompt = await readTextFile(options.request.promptPath)
-  const promptArtifact = relativeToProject(options.projectRoot, options.request.promptPath)
+  const preparedExecution =
+    options.preparedExecution ??
+    (await preparePromptExecution({
+      request: options.request,
+      projectRoot: options.projectRoot,
+      modelProvider: options.modelProvider,
+    }))
+  const { prompt, promptArtifact, routeSummary, costEstimate } = preparedExecution
   const executionStartedAt = options.now?.() ?? new Date()
-  const routeSummary = composeAiRouteRecommendation({
-    prompt,
-    filePath: options.request.promptPath,
-    taskType: options.request.taskType,
-    complexity: 'high',
-    confidenceRequirement: 'standard',
-    costPreference: 'balanced',
-    allowHostedModels: false,
-    allowPremiumModels: false,
-  })
-
-  assertSafeToExecute(routeSummary)
-  await assertProviderAvailable(options.modelProvider)
 
   const providerResult = await options.modelProvider.generateResponse(
     buildModelRequest(options.request, prompt, routeSummary.classification, promptArtifact),
@@ -210,13 +210,6 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
     options.request.promptPath,
     executionCompletedAt,
   )
-  const costEstimate = estimateAiUsageCost({
-    pricing: findPricing('local', 'local-coder'),
-    usage: {
-      estimatedInputTokens: estimateInputTokens(prompt),
-      estimatedOutputTokens: options.request.maxOutputTokens,
-    },
-  })
   const result: ExecutePromptResult = {
     request: options.request,
     promptArtifact,
@@ -265,4 +258,41 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
   )
 
   return result
+}
+
+export async function preparePromptExecution(options: {
+  request: ExecutePromptRequest
+  projectRoot: string
+  modelProvider: AvailableLocalModelProvider
+}): Promise<PreparedPromptExecution> {
+  assertLocalProvider(options.request, options.modelProvider)
+
+  const prompt = await readTextFile(options.request.promptPath)
+  const promptArtifact = relativeToProject(options.projectRoot, options.request.promptPath)
+  const routeSummary = composeAiRouteRecommendation({
+    prompt,
+    filePath: options.request.promptPath,
+    taskType: options.request.taskType,
+    complexity: 'high',
+    confidenceRequirement: 'standard',
+    costPreference: 'balanced',
+    allowHostedModels: false,
+    allowPremiumModels: false,
+  })
+
+  assertSafeToExecute(routeSummary)
+  await assertProviderAvailable(options.modelProvider)
+
+  return {
+    prompt,
+    promptArtifact,
+    routeSummary,
+    costEstimate: estimateAiUsageCost({
+      pricing: findPricing('local', 'local-coder'),
+      usage: {
+        estimatedInputTokens: estimateInputTokens(prompt),
+        estimatedOutputTokens: options.request.maxOutputTokens,
+      },
+    }),
+  }
 }

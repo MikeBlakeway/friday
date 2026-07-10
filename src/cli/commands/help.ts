@@ -12,6 +12,7 @@ Available commands:
   evidence Prepare local evidence files; use --collect [--timeout-ms N] to run deterministic providers
   plan     Create a planning prompt from local project memory
   review   Create a review prompt from local changed-file context
+  run      Prepare and execute a plan or review workflow with the configured local provider
   execute  Execute an existing prompt artefact through an explicit local provider
   route    Preview Friday's model route for a task without calling a provider
   cost     Estimate advisory provider/model cost from token counts
