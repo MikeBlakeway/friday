@@ -115,7 +115,7 @@ Friday is currently in early development. The initial focus is on the core engin
 
 ### Foundation
 
-- [ ] Global developer memory (post-MVP)
+- [x] Global developer memory
 - [x] Per-project memory
 - [x] Project initialisation
 - [x] Workflow-specific prompt templates
@@ -221,7 +221,7 @@ Friday uses two types of memory.
 
 ### Global Friday Memory
 
-Global memory describes how the developer likes to work.
+Global memory describes how the developer likes to work across repositories.
 
 Example:
 
@@ -232,20 +232,16 @@ Example:
   model-policy.md
   privacy-policy.md
   cost-policy.md
-  review-checklist.md
-
-  prompts/
-    brainstorm.md
-    plan.md
-    spec.md
-    design.md
-    build.md
-    review.md
-    refactor.md
-    ship.md
 ```
 
-This memory is reusable across projects.
+This memory is optional and reusable across projects. `friday plan` and
+`friday review` load these files in the order shown above when they exist,
+report which files were loaded or missing, and include loaded global memory
+before project memory in generated prompts.
+
+Global policy sets a floor. Project memory can add stricter privacy or secret
+handling requirements, but it cannot silently weaken a stronger global privacy
+classification. Exact duplicate global/project content is included once.
 
 ### Project Friday Memory
 
@@ -271,7 +267,7 @@ repo/.friday/
     evidence-pack.json
 ```
 
-This memory describes the current project, its goals, architecture, design direction, decisions, and active tasks.
+This memory describes the current project, its goals, architecture, design direction, decisions, and active tasks. Project memory is repository-scoped and should not contain reusable personal preferences that belong in `~/.friday/`.
 
 ### Local Evidence
 
@@ -472,7 +468,7 @@ Future possibilities:
 
 - [x] Project structure
 - [x] CLI skeleton
-- [ ] Global memory templates
+- [x] Global memory loading
 - [x] Project memory templates
 - [x] Project memory loading
 - [x] Basic tests

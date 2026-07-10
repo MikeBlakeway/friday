@@ -60,4 +60,51 @@ describe('buildPlanningPrompt', () => {
     expect(result.prompt).toContain('Authentication has no integration tests.')
     expect(result.evidenceCount).toBe(1)
   })
+
+  it('includes global memory before project memory and exposes policy warnings', () => {
+    const result = buildPlanningPrompt({
+      goal: 'Plan safe routing',
+      globalMemory: {
+        homeDir: '/home/dev',
+        globalMemoryDirPath: '/home/dev/.friday',
+        files: [
+          {
+            fileName: 'privacy-policy.md',
+            filePath: '/home/dev/.friday/privacy-policy.md',
+            exists: true,
+            content: '# Privacy\n\nCustomer data and PII must stay local.',
+          },
+          {
+            fileName: 'profile.md',
+            filePath: '/home/dev/.friday/profile.md',
+            exists: false,
+            content: '',
+          },
+        ],
+      },
+      projectMemory: {
+        projectRoot: '/project',
+        files: [
+          {
+            fileName: 'project.md',
+            filePath: '/project/.friday/project.md',
+            exists: true,
+            content: '# Public website',
+          },
+        ],
+      },
+      evidence: [],
+    })
+
+    expect(result.prompt).toContain('### Global: privacy-policy.md\n\n# Privacy')
+    expect(result.prompt.indexOf('### Global: privacy-policy.md')).toBeLessThan(
+      result.prompt.indexOf('### project.md'),
+    )
+    expect(result.loadedGlobalMemoryFiles).toEqual(['privacy-policy.md'])
+    expect(result.missingGlobalMemoryFiles).toEqual(['profile.md'])
+    expect(result.effectivePrivacyLevel).toBe('sensitive')
+    expect(result.policyWarnings).toEqual([
+      'Global memory sets a sensitive privacy floor; project memory cannot weaken it to public.',
+    ])
+  })
 })

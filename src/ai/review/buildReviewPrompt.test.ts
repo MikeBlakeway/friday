@@ -60,4 +60,27 @@ describe('buildReviewPrompt', () => {
     expect(result.prompt).toContain('No changed files were detected.')
     expect(result.changedFileCount).toBe(0)
   })
+
+  it('includes global memory in review prompts', () => {
+    const result = buildReviewPrompt({
+      changedFiles: [],
+      globalMemory: {
+        homeDir: '/home/dev',
+        globalMemoryDirPath: '/home/dev/.friday',
+        files: [
+          {
+            fileName: 'coding-standards.md',
+            filePath: '/home/dev/.friday/coding-standards.md',
+            exists: true,
+            content: '# Standards\n\nPrefer typed TypeScript.',
+          },
+        ],
+      },
+      projectMemory: { projectRoot: '/project', files: [] },
+      evidence: [],
+    })
+
+    expect(result.prompt).toContain('### Global: coding-standards.md')
+    expect(result.loadedGlobalMemoryFiles).toEqual(['coding-standards.md'])
+  })
 })

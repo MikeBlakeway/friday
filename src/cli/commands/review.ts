@@ -8,6 +8,7 @@ import { FRIDAY_EVIDENCE_DIR } from '../../ai/evidence/evidenceFiles.js'
 import { parseManualEvidence } from '../../ai/evidence/loadManualEvidence.js'
 import { ensureDir, pathExists, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
+import { loadGlobalMemory } from '../../core/globalMemory.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
 import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
 
@@ -98,6 +99,7 @@ async function loadChangedFiles(projectRoot: string): Promise<ChangedFileContext
 export async function runReviewCommand(options: {
   projectRoot: string
   args: string[]
+  homeDir?: string
 }): Promise<void> {
   parseReviewArgs(options.args)
 
@@ -111,10 +113,12 @@ export async function runReviewCommand(options: {
     ? parseManualEvidence(await readTextFile(manualEvidencePath))
     : []
   const projectMemory = await loadProjectMemory(options.projectRoot)
+  const globalMemory = await loadGlobalMemory(options.homeDir)
   const changedFiles = await loadChangedFiles(options.projectRoot)
-  const result = buildReviewPrompt({ changedFiles, projectMemory, evidence })
+  const result = buildReviewPrompt({ changedFiles, projectMemory, globalMemory, evidence })
   const aiWorkflowSummary = buildAiWorkflowSummary({
     prompt: result.prompt,
+    declaredPrivacyLevel: result.effectivePrivacyLevel,
     taskType: 'review',
     complexity: 'high',
     confidenceRequirement: 'high',
@@ -145,6 +149,32 @@ export async function runReviewCommand(options: {
     }
   }
   console.log('')
+  console.log('Global memory:')
+  if (result.loadedGlobalMemoryFiles.length === 0) {
+    console.log('  loaded: (none)')
+  } else {
+    for (const fileName of result.loadedGlobalMemoryFiles) {
+      console.log(`✓ ~/.friday/${fileName}`)
+    }
+  }
+  console.log(
+    result.missingGlobalMemoryFiles.length > 0
+      ? `  missing: ${result.missingGlobalMemoryFiles.map((fileName) => `~/.friday/${fileName}`).join(', ')}`
+      : '  missing: (none)',
+  )
+  if (result.skippedDuplicateMemoryFiles.length > 0) {
+    console.log(
+      `  skipped duplicate project memory: ${result.skippedDuplicateMemoryFiles.join(', ')}`,
+    )
+  }
+  console.log('')
+  if (result.policyWarnings.length > 0) {
+    console.log('Memory policy:')
+    for (const warning of result.policyWarnings) {
+      console.log(`- ${warning}`)
+    }
+    console.log('')
+  }
   console.log('Evidence:')
   console.log(
     result.evidenceCount > 0

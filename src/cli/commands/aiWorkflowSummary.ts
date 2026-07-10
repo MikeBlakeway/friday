@@ -6,6 +6,7 @@ import type {
   AiTaskType,
   ConfidenceRequirement,
   CostPreference,
+  PrivacyLevel,
   TaskComplexity,
 } from '../../ai/routing/modelRouting.js'
 
@@ -23,6 +24,7 @@ export interface BuildAiWorkflowSummaryInput {
   confidenceRequirement: ConfidenceRequirement
   costPreference: CostPreference
   estimatedOutputTokens: number
+  declaredPrivacyLevel?: PrivacyLevel
 }
 
 function estimateInputTokens(prompt: string): number {
@@ -42,6 +44,9 @@ export function buildAiWorkflowSummary(input: BuildAiWorkflowSummaryInput): AiWo
     costPreference: input.costPreference,
     allowHostedModels: true,
     allowPremiumModels: false,
+    ...(input.declaredPrivacyLevel === undefined
+      ? {}
+      : { declaredPrivacyLevel: input.declaredPrivacyLevel }),
   })
   const route = routeSummary.recommendation.route
   const estimatedInputTokens = estimateInputTokens(input.prompt)

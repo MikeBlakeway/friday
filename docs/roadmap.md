@@ -3,7 +3,7 @@
 Friday is currently focused on a no-provider local workflow MVP. The immediate
 goal is to make the existing local pieces feel like one coherent product before
 adding hosted provider execution, API keys, network calls, usage telemetry,
-global memory, cockpit UI, or autonomous coding.
+cockpit UI, or autonomous coding.
 
 ## MVP Definition
 
@@ -26,6 +26,7 @@ provider.
 ## Current Implemented Foundation
 
 - Node.js and strongly typed TypeScript CLI foundation
+- Optional `~/.friday/` global-memory loading
 - `.friday/` project-memory templates and status inspection
 - Project-memory loading
 - Local evidence file preparation and evidence-pack generation
@@ -53,7 +54,6 @@ provider.
 
 ## Post-MVP Work
 
-- Global developer memory and reusable policy files
 - Usage logging and budget rules
 - Local model provider implementation
 - Hosted provider implementations

@@ -34,6 +34,12 @@ async function createTempProject(): Promise<string> {
   return projectRoot
 }
 
+async function createTempHome(): Promise<string> {
+  const homeDir = await mkdtemp(path.join(os.tmpdir(), 'friday-review-home-'))
+  tempDirs.push(homeDir)
+  return homeDir
+}
+
 async function captureConsoleOutput(action: () => Promise<void>): Promise<string> {
   const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
@@ -130,6 +136,13 @@ new file mode 100644
 describe('runReviewCommand', () => {
   it('reports changed-file context, privacy, route, warnings, and estimated cost', async () => {
     const projectRoot = await createTempProject()
+    const homeDir = await createTempHome()
+    await mkdir(path.join(homeDir, '.friday'), { recursive: true })
+    await writeFile(
+      path.join(homeDir, '.friday', 'privacy-policy.md'),
+      '# Privacy\n\nKeep project context local unless reviewed.',
+      'utf8',
+    )
     await writeFile(
       path.join(projectRoot, 'README.md'),
       '# Test project\n\nUpdated docs.\n',
@@ -137,11 +150,13 @@ describe('runReviewCommand', () => {
     )
 
     const output = await captureConsoleOutput(() =>
-      runReviewCommand({ projectRoot, args: ['--changed'] }),
+      runReviewCommand({ projectRoot, homeDir, args: ['--changed'] }),
     )
 
     expect(output).toContain('Changed files:')
     expect(output).toContain('✓ git diff context loaded: 1 file(s)')
+    expect(output).toContain('Global memory:')
+    expect(output).toContain('✓ ~/.friday/privacy-policy.md')
     expect(output).toContain('AI policy:')
     expect(output).toContain('Privacy level: internal')
     expect(output).toContain('Route decision: use-strong-hosted')
@@ -152,6 +167,7 @@ describe('runReviewCommand', () => {
 
   it('routes sensitive review context to local by default', async () => {
     const projectRoot = await createTempProject()
+    const homeDir = await createTempHome()
     await writeFile(
       path.join(projectRoot, 'README.md'),
       '# Customer data\n\nPII and payroll.\n',
@@ -159,7 +175,7 @@ describe('runReviewCommand', () => {
     )
 
     const output = await captureConsoleOutput(() =>
-      runReviewCommand({ projectRoot, args: ['--changed'] }),
+      runReviewCommand({ projectRoot, homeDir, args: ['--changed'] }),
     )
 
     expect(output).toContain('Privacy level: sensitive')

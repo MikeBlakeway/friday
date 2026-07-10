@@ -1,4 +1,5 @@
 import type { EvidenceSeverity, EvidenceSource } from '../evidence/evidence.js'
+import { combineMemoryContext } from '../../core/globalMemory.js'
 import type { ReviewPromptInput, ReviewPromptResult } from './reviewPrompt.js'
 
 function toHeadingCase(value: EvidenceSource | EvidenceSeverity): string {
@@ -6,18 +7,19 @@ function toHeadingCase(value: EvidenceSource | EvidenceSeverity): string {
 }
 
 export function buildReviewPrompt(input: ReviewPromptInput): ReviewPromptResult {
-  const memoryFiles = input.projectMemory.files.filter(
-    (file) => file.exists && file.content.trim().length > 0,
-  )
-  const loadedMemoryFiles = memoryFiles.map((file) => file.fileName)
-  const missingMemoryFiles = input.projectMemory.files
-    .filter((file) => !file.exists)
-    .map((file) => file.fileName)
+  const memoryContext = combineMemoryContext({
+    projectMemory: input.projectMemory,
+    ...(input.globalMemory === undefined ? {} : { globalMemory: input.globalMemory }),
+  })
 
   const changedFileSections = input.changedFiles.map(
     (file) => `### ${file.filePath}\n\n\`\`\`diff\n${file.diff.trim()}\n\`\`\``,
   )
-  const memorySections = memoryFiles.map((file) => `### ${file.fileName}\n\n${file.content.trim()}`)
+  const memorySections = memoryContext.sections.map((file) =>
+    file.source === 'global'
+      ? `### Global: ${file.fileName}\n\n${file.content}`
+      : `### ${file.fileName}\n\n${file.content}`,
+  )
   const evidenceSections = input.evidence.map(
     (evidence) =>
       `### ${toHeadingCase(evidence.source)} - ${toHeadingCase(evidence.severity)} - ${evidence.title}\n\n${evidence.content.trim()}`,
@@ -30,7 +32,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): ReviewPromptResult 
     '',
     'You are reviewing local software changes from deterministic git diff context.',
     '',
-    'Use the changed files, project memory, and evidence below.',
+    'Use the changed files, global memory, project memory, and evidence below.',
     '',
     'Prioritise:',
     '',
@@ -49,9 +51,9 @@ export function buildReviewPrompt(input: ReviewPromptInput): ReviewPromptResult 
       ? changedFileSections.join('\n\n')
       : 'No changed files were detected.',
     '',
-    '## Project Memory',
+    '## Memory',
     '',
-    memorySections.length > 0 ? memorySections.join('\n\n') : 'No project memory was provided.',
+    memorySections.length > 0 ? memorySections.join('\n\n') : 'No memory was provided.',
     '',
     '## Evidence',
     '',
@@ -72,8 +74,13 @@ export function buildReviewPrompt(input: ReviewPromptInput): ReviewPromptResult 
 
   return {
     prompt,
-    loadedMemoryFiles,
-    missingMemoryFiles,
+    effectivePrivacyLevel: memoryContext.effectivePrivacyLevel,
+    loadedGlobalMemoryFiles: memoryContext.loadedGlobalMemoryFiles,
+    missingGlobalMemoryFiles: memoryContext.missingGlobalMemoryFiles,
+    loadedMemoryFiles: memoryContext.loadedProjectMemoryFiles,
+    missingMemoryFiles: memoryContext.missingProjectMemoryFiles,
+    skippedDuplicateMemoryFiles: memoryContext.skippedDuplicateMemoryFiles,
+    policyWarnings: memoryContext.policyWarnings,
     changedFileCount: input.changedFiles.length,
     evidenceCount: input.evidence.length,
   }
