@@ -2,17 +2,11 @@
 
 ## Backlog
 
-- [ ] Define the MVP as a no-provider local workflow engine.
-- [ ] Integrate privacy classification, route recommendation, and cost estimates
-      into the `plan` and `review` command output.
-- [ ] Implement a `friday cost` command on top of the existing cost-estimation
-      domain model.
-- [ ] Add Git, TypeScript, test-runner, and Fallow evidence collection behind the
-      evidence-provider foundation.
-- [ ] Create an example project that demonstrates useful Friday memory and planning
-      output.
-- [ ] Improve the GitHub portfolio presentation with focused examples, screenshots
-      or terminal captures, and an accurate roadmap.
+- [ ] Improve the GitHub portfolio presentation with screenshots or terminal
+      captures.
+- [ ] Add post-MVP usage telemetry and budget reporting.
+- [ ] Add post-MVP provider execution behind privacy, secret, routing, and cost
+      gates.
 
 ## Done
 
@@ -38,9 +32,19 @@
 - [x] Add advisory cost-estimation types and deterministic cost calculation.
 - [x] Implement `friday evidence` to prepare evidence provider files and write an
       inspectable evidence pack.
+- [x] Add opt-in Git, TypeScript, test-runner, and Fallow evidence collection via
+      `friday evidence --collect`.
 - [x] Define `friday review --changed` as a local review-prompt workflow that
       consumes changed-file context, project memory, and evidence.
+- [x] Implement `friday cost` as an advisory CLI command on top of the
+      cost-estimation domain model.
+- [x] Integrate privacy classification, route recommendation, and cost estimates
+      into the `plan` and `review` command output.
+- [x] Create an example project that demonstrates useful Friday memory and planning
+      output.
+- [x] Define the MVP as a no-provider local workflow engine.
 - [x] Reconcile public docs and project memory with the current implemented state.
+- [x] Prepare Friday v0.1.0 release packaging and release notes.
 
 ## Later
 
