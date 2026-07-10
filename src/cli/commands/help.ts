@@ -4,19 +4,37 @@ export function runHelpCommand(): void {
 Usage:
   friday <command>
 
-Available commands:
-  init     Initialize Friday project memory in the current project
-  status   Show Friday project memory status
-  doctor   Diagnose runtime, memory, and local provider readiness; use --test-provider to test generation
-  local    Set up a reusable local model provider; run "friday local setup"
-  evidence Prepare local evidence files; use --collect [--timeout-ms N] to run deterministic providers
-  plan     Create a planning prompt from local project memory
-  review   Create a review prompt from local changed-file context
-  run      Prepare and execute a plan or review workflow with the configured local provider
-  execute  Execute an existing prompt artefact through an explicit local provider
-  route    Preview Friday's model route for a task without calling a provider
-  cost     Estimate advisory provider/model cost from token counts
-  help     Show this help message
+Start here:
+  friday local setup
+  friday doctor
+  friday init
+  friday evidence --collect
+  friday run plan "Recommend the next useful improvement"
+
+Setup:
+  local setup  Configure a reusable local provider and model
+  init         Initialize project memory in the current project
+
+Preparation and inspection (no model call):
+  status       Show project memory status
+  evidence     Prepare evidence; add --collect to run deterministic providers
+  plan         Create a planning prompt artefact from project memory
+  review       Create a review prompt artefact from changed-file context
+
+Execution:
+  run          Prepare and execute a plan or review with the configured local provider
+  execute      Execute an existing prompt artefact through an explicit local provider
+
+Diagnostics:
+  doctor       Check installation, memory, provider and model readiness
+               Add --test-provider to send a lightweight local test request
+
+Advanced policy tools:
+  route        Preview a model route without calling a provider
+  cost         Estimate advisory provider/model cost from token counts
+
+Help:
+  help         Show this help message
 
 Planned commands:
   brainstorm

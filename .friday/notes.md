@@ -12,11 +12,13 @@
 - Gather deterministic evidence before asking an LLM to reason. Fallow, Git,
   TypeScript, and test results should inform later workflows as evidence, not be
   conflated with AI-provider output.
-- Friday must remain useful before model integrations exist. Local memory,
-  structured prompts, evidence, and inspectable output are valuable on their own.
+- Friday remains useful without model execution. Local memory, structured prompts,
+  evidence, and inspectable output are valuable on their own; configured local
+  execution is an explicit additional step.
 - Routing, privacy classification, secret detection, provider contracts, advisory
   cost estimation, `friday cost`, and opt-in local evidence collection are
-  implemented. Do not claim real provider execution, API-key loading, usage
-  telemetry, or budget enforcement until those code paths exist.
+  implemented, alongside LM Studio setup, diagnostics, local execution, and
+  metadata-only usage logging. Do not claim hosted-provider execution, API-key
+  loading, published telemetry, or budget enforcement until those paths exist.
 - Keep generated artefacts under `.friday/output/` distinct from the human-curated
   project memory files.

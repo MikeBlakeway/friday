@@ -138,7 +138,7 @@ describe('collectDoctorReport', () => {
     ])
   })
 
-  it('reports partial optional configuration without calling generation', async () => {
+  it('reports partial optional memory and missing required run configuration', async () => {
     const environment = await createEnvironment()
     await mkdir(path.join(environment.projectRoot, '.friday'), { recursive: true })
     await writeFile(
@@ -159,7 +159,7 @@ describe('collectDoctorReport', () => {
       },
     })
 
-    expect(report.ready).toBe(true)
+    expect(report.ready).toBe(false)
     expect(allChecks(report)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -171,8 +171,9 @@ describe('collectDoctorReport', () => {
           label: 'Global memory is partial (1/5 files)',
         }),
         expect.objectContaining({
-          status: 'skipped',
-          label: expect.stringContaining('localhost defaults'),
+          status: 'failed',
+          label: 'Local provider configuration not found',
+          action: expect.stringContaining('friday local setup'),
         }),
         expect.objectContaining({ status: 'skipped', label: 'Test generation skipped' }),
       ]),
@@ -243,7 +244,7 @@ describe('collectDoctorReport', () => {
       providerFetch: async () => response({ data: [{ id: 'qwen-local' }] }),
     })
 
-    expect(report.ready).toBe(true)
+    expect(report.ready).toBe(false)
     expect(allChecks(report)).toContainEqual(
       expect.objectContaining({
         status: 'warning',
@@ -251,6 +252,6 @@ describe('collectDoctorReport', () => {
         action: expect.stringContaining('friday init'),
       }),
     )
-    expect(formatDoctorReport(report)).toContain('Friday is ready for local execution.')
+    expect(formatDoctorReport(report)).toContain('Friday needs attention before local execution.')
   })
 })

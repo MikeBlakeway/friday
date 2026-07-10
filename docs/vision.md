@@ -22,30 +22,35 @@ Friday currently works as a local command-line tool. It can:
 - preview a model route from explicit task and policy inputs
 - classify prompt privacy and detect common secrets in pure TypeScript
 - estimate advisory model cost through the `friday cost` command
-- define provider-neutral model interfaces and a deterministic mock provider
+- configure and diagnose a reusable LM Studio local provider and model
+- execute planning and changed-file review workflows through that local provider
+- preserve prompt and result artefacts plus metadata-only usage history
 
-Friday does not currently call real AI providers, load API keys, stream model
-output, log real usage, or enforce budgets.
+Friday does not call hosted AI providers, load API keys, stream model output,
+publish telemetry, or enforce budgets.
 
 ## MVP Direction
 
-Friday v0.1.0 is a no-provider local workflow engine:
+Friday v0.1.0 combines deterministic local preparation with explicit local-model
+execution:
 
 ```bash
+friday local setup
+friday doctor
 friday init
-friday evidence
-friday plan "<goal>"
-friday review --changed
+friday evidence --collect
+friday run plan "<goal>"
+friday run review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
 The MVP makes local project memory, deterministic evidence, route previews, and
-advisory cost estimates inspectable before any future model call. Planning and
-review workflows include local AI policy summaries while still leaving the
-provider handoff manual. Friday writes local artifacts and does not require API
-keys, hosted provider configuration, provider network calls, usage telemetry,
-global developer memory, a cockpit UI, or autonomous coding.
+advisory cost estimates inspectable before model execution. Preparation commands
+remain provider-neutral. `friday run` adds a safety preflight, approval boundary,
+configured localhost model call, result artefact, and local usage record. Friday
+does not require API keys, hosted-provider configuration, global developer
+memory, a cockpit UI, or autonomous coding.
 
 The example project and architecture diagram support public demo and
 presentation work around the local workflow.
@@ -57,10 +62,11 @@ presentation work around the local workflow.
 - Recommend the cheapest safe model tier for the task.
 - Block secrets before hosted provider execution is possible.
 - Preserve developer judgement and explicit control.
-- Avoid claiming provider execution or cost tracking until those paths exist.
+- Describe local execution and advisory cost honestly without implying hosted
+  execution, billing, or published telemetry.
 
 ## Post-MVP Direction
 
-After the local workflow is coherent, Friday can add usage logging, local model
-execution, hosted provider integrations, richer workflow commands, global
-developer memory, demo materials, and eventually a compact cockpit UI.
+After the local workflow is coherent, Friday can add hosted-provider
+integrations, richer workflow commands, budget policy, aggregate usage reports,
+and eventually a compact cockpit UI.

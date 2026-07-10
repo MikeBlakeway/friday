@@ -1,27 +1,32 @@
 # Roadmap
 
-Friday is currently focused on a no-provider local workflow MVP. The immediate
-goal is to make the existing local pieces feel like one coherent product before
-adding hosted provider execution, API keys, network calls, usage telemetry,
-cockpit UI, or autonomous coding.
+Friday is currently focused on a coherent local-model workflow MVP. The
+implemented path prepares inspectable local context and can execute plan and
+review workflows through a configured LM Studio provider. Hosted-provider
+execution, API keys, published telemetry, cockpit UI, and autonomous coding
+remain outside the current product boundary.
 
 ## MVP Definition
 
-The MVP is a local workflow engine that can run without provider credentials:
+The MVP is a local workflow engine with deterministic preparation and optional,
+explicit local-model execution:
 
 ```bash
 friday init
-friday evidence
-friday plan "<goal>"
-friday review --changed
+friday local setup
+friday doctor
+friday evidence --collect
+friday run plan "<goal>"
+friday run review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
-The engine should gather local project context, write deterministic evidence,
+Preparation commands gather local project context, write deterministic evidence,
 apply privacy and secret-safety policy, recommend a model route, estimate
-advisory cost, and leave inspectable artifacts behind. It should not call an AI
-provider.
+advisory cost, and leave inspectable artefacts without calling a provider.
+Execution requires a configured localhost provider and explicit approval, then
+writes a result artefact and metadata-only usage record.
 
 ## Current Implemented Foundation
 
@@ -38,12 +43,16 @@ provider.
 - Advisory cost-estimation domain model
 - Advisory cost-estimation CLI command
 - Provider-neutral model interfaces and mock provider
+- Guided LM Studio discovery, model selection, and global provider configuration
+- Local-provider diagnostics and opt-in test generation
+- One-command local plan and changed-file review execution
+- Local result artefacts and metadata-only usage history
 - Vitest, TypeScript, Prettier, Fallow, and build checks
 
 ## MVP Release State
 
-- Documentation and project memory are reconciled with the implemented
-  no-provider local workflow engine.
+- Documentation and project memory are reconciled with the implemented local
+  provider experience.
 - `friday evidence --collect` can gather deterministic local evidence from Git,
   TypeScript, tests, and Fallow.
 - `friday cost` provides advisory estimates from built-in provider/model pricing
@@ -51,11 +60,12 @@ provider.
 - `friday plan` and `friday review` generate provider-neutral prompts and print
   local privacy, route, and advisory cost summaries for manual inspection before
   any model handoff.
+- `friday local setup`, `friday doctor`, and `friday run` provide the guided path
+  from model selection to an approved local result.
 
 ## Post-MVP Work
 
-- Usage logging and budget rules
-- Local model provider implementation
+- Budget rules and aggregate usage reporting
 - Hosted provider implementations
 - Explicit premium escalation and approval flow
 - Brainstorm, spec, design, refactor, and ship workflows

@@ -265,9 +265,10 @@ async function globalConfiguration(
 
     if (result.status === 'missing') {
       checks.push({
-        status: 'skipped',
-        label: 'Provider configuration not present; localhost defaults will be used',
+        status: 'failed',
+        label: 'Local provider configuration not found',
         detail: result.filePath,
+        action: 'Run "friday local setup", then rerun "friday doctor".',
       })
       return { section: { title: 'Global configuration', checks } }
     }
@@ -337,8 +338,8 @@ function modelCheck(discovery: LmStudioDiscoveryResult): DoctorCheck {
       detail: discovery.message,
       action:
         discovery.status === 'no-models'
-          ? 'Load a model in LM Studio and rerun "friday doctor".'
-          : 'Select a loaded model in ~/.friday/providers.json and rerun "friday doctor".',
+          ? 'Load a model in LM Studio, run "friday local setup", then rerun "friday doctor".'
+          : 'Run "friday local setup" to select a loaded model, then rerun "friday doctor".',
     }
   }
 

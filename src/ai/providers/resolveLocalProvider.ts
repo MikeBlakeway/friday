@@ -36,7 +36,7 @@ export async function resolveLocalModelProvider(
 
   if (providerId !== 'lm-studio') {
     throw new Error(
-      `Configured default provider "${providerId}" is not supported yet. Friday currently discovers lm-studio only.`,
+      `Configured default provider "${providerId}" is not supported yet. Run "friday local setup" to configure the supported LM Studio provider.`,
     )
   }
 
@@ -59,7 +59,7 @@ export async function resolveLocalModelProvider(
   })
 
   if (discovery.status !== 'ready') {
-    throw new Error(discovery.message)
+    throw new Error(`${discovery.message} Run "friday local setup" to repair local provider setup.`)
   }
 
   return {
