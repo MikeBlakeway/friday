@@ -15,12 +15,19 @@ examples/basic-project/.friday/
 
 Friday reads the Markdown files in `.friday/`, skips files with no content, and
 places the loaded context into the planning prompt. The prompt is then ready to
-review, save, or pass to a model through a future provider workflow.
+review, save, or execute through Friday's configured local provider.
 
 Try the same workflow from this directory:
 
 ```bash
 friday plan "Add recipe sharing"
+```
+
+After running `friday local setup` once on the machine, execute the same planning
+workflow end to end with:
+
+```bash
+friday run plan "Add recipe sharing"
 ```
 
 The [sample planning prompt output](./planning-output.md) shows the kind of

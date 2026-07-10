@@ -8,6 +8,68 @@ Friday brings those workflows into one developer-owned system.
 
 ---
 
+## Quick Start
+
+Friday currently supports Node.js 18 or newer and a local model served by
+[LM Studio](https://lmstudio.ai/). Install LM Studio, load a model, and enable
+its local server before continuing.
+
+Install the current release tarball:
+
+```bash
+npm install -g ./friday-0.1.0.tgz
+```
+
+Or install from a development checkout:
+
+```bash
+npm install
+npm run build
+npm link
+```
+
+Friday is not published to the npm registry yet. A future npm installation will
+use `npm install -g friday`; do not use that command for the current release.
+
+Configure one reusable local provider and verify the machine:
+
+```bash
+friday local setup
+friday doctor
+```
+
+Then, from the project you want Friday to understand:
+
+```bash
+friday init
+# Add useful context to the Markdown files under .friday/
+friday evidence --collect
+friday run plan "Recommend the next useful improvement"
+```
+
+`friday local setup` saves the selected local provider and model outside the
+repository at `~/.friday/providers.json`. `friday init` creates inspectable
+project memory without overwriting existing files. Evidence collection runs
+local deterministic tools, and `friday run plan` shows the safety and cost
+preflight before asking permission to call the configured local model.
+
+The completed run leaves a prompt artefact, result artefact, and metadata-only
+usage history under `.friday/`. Use `--yes` only when you want to approve a run
+non-interactively.
+
+To use Friday on its own repository after setup:
+
+```bash
+friday doctor
+friday run plan "Review Friday and recommend the next smallest high-value improvement"
+```
+
+See the [first-run and Friday-on-Friday walkthrough](./docs/first-run.md) for a
+polished terminal transcript, review workflow, generated artefacts, recovery
+commands, and the commands used to verify this journey.
+
+---
+
 ## Why Friday Exists
 
 Modern AI-assisted development is powerful, but messy.
@@ -106,10 +168,10 @@ friday execute .friday/output/plan-prompt.md --provider local
 
 This path should gather local project memory and deterministic evidence, apply
 privacy and secret-safety policy, recommend a model route, estimate advisory
-cost, and write inspectable artifacts. `friday run` provides a concise local
+cost, and write inspectable artefacts. `friday run` provides a concise local
 execution path while preserving the generated prompt, safety preflight, approval
-boundary, result artifact, and usage log. Preparation commands such as `plan` and
-`review` still do not call an AI provider, and their artifacts can be executed
+boundary, result artefact, and usage log. Preparation commands such as `plan` and
+`review` still do not call an AI provider, and their artefacts can be executed
 separately with `friday execute`.
 
 Demo work such as the example project and architecture diagram matters after the
@@ -230,9 +292,9 @@ to control.
 
 ---
 
-## Installation
+## Installation Reference
 
-Friday v0.1.0 is packaged as a Node.js CLI. For this MVP release, install from a
+Friday v0.1.0 is packaged as a Node.js CLI. For this release, install from a
 GitHub release asset or a local package tarball rather than the npm registry:
 
 ```bash
@@ -312,9 +374,9 @@ npm link
 friday help
 ```
 
-The preparation commands do not require API keys and do not call AI providers.
-`friday execute` can call a locally running LM Studio-compatible endpoint only
-when the user explicitly passes `--provider local`.
+Preparation commands do not require API keys and do not call AI providers.
+Execution commands call only the explicitly configured localhost LM Studio
+provider; Friday does not implement hosted-provider execution.
 
 Friday also includes an optional code-level
 [LM Studio local provider adapter](./docs/lm-studio-provider.md) for the
@@ -455,15 +517,13 @@ The guiding rule:
 
 Friday is intended to help with:
 
-- brainstorming product ideas
 - shaping technical plans
-- creating implementation specs
 - generating project task lists
 - reviewing changed files
 - explaining failing tests
 - planning refactors
 - summarising pull requests
-- tracking AI usage cost
+- inspecting local execution usage
 - deciding when premium model escalation is justified
 
 For a small portfolio-friendly walkthrough, see the
@@ -497,8 +557,10 @@ and inspect per-project memory, collect deterministic local evidence, build
 planning and review prompts from local context, print privacy-aware route and
 cost summaries for those workflows, preview model routes, classify privacy risk,
 detect common secrets, estimate advisory model costs, and define
-provider-agnostic model contracts. It can explicitly execute through a local LM
-Studio provider, but it does not call hosted AI providers.
+provider-agnostic model contracts. It can prepare and execute plan and changed-file
+review workflows through a configured local LM Studio provider, preserving prompt
+and result artefacts plus metadata-only usage history. It does not call hosted AI
+providers.
 
 Implemented CLI commands:
 
@@ -527,7 +589,9 @@ Friday also includes a provider-agnostic `friday cost` command backed by the
 cost estimation domain layer. It combines configured per-million input and
 output token prices with estimated token counts to produce deterministic
 advisory estimates. These estimates are not billing records and should be
-treated as planning guidance until real usage telemetry and usage logging exist.
+treated as planning guidance rather than billing records. Local execution writes
+real token usage and advisory estimates to metadata-only project history; Friday
+does not publish telemetry.
 
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,
@@ -539,15 +603,14 @@ network requests.
 Friday can now compose that privacy classification with model routing for a raw
 task prompt. Secret context returns a blocked route with no hosted alternatives,
 sensitive context defaults to a local route, and safety warnings are returned as
-user-facing text. This is still recommendation-only: provider calls remain
-planned work.
+user-facing text. This remains recommendation-only for hosted routes. The local
+execution path re-applies the same safety policy before invocation.
 
-Friday also includes provider-neutral interfaces and a deterministic mock
-provider for future model execution tests. Real local and hosted provider
-implementations, API-key loading, streaming, and tool-call execution are not
-implemented.
+Friday also includes provider-neutral interfaces, a deterministic mock provider,
+and an LM Studio adapter for local execution. Hosted provider implementations,
+API-key loading, streaming, and tool-call execution are not implemented.
 
-The current MVP direction is a no-provider local workflow engine that can:
+The current MVP direction is a local-provider workflow engine that can:
 
 1. initialise project memory
 2. load project context
@@ -556,6 +619,8 @@ The current MVP direction is a no-provider local workflow engine that can:
 5. route a task to an appropriate model tier without executing it
 6. estimate advisory usage cost
 7. create inspectable planning, review, cost, route, and evidence artefacts
+8. execute planning and review through a configured local model with approval
+9. record local result artefacts and metadata-only usage history
 
 MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
 `friday review`, `friday run`, `friday route`, `friday cost`, and the explicit
@@ -579,7 +644,6 @@ Current stack:
 
 Future possibilities:
 
-- local model integration
 - hosted model integrations
 - interactive terminal UI
 - desktop or web cockpit
@@ -605,7 +669,7 @@ Future possibilities:
 - [x] Secret detection
 - [x] Advisory cost estimation domain model
 - [x] Built-in advisory model pricing
-- [ ] Usage logging
+- [x] Local metadata-only usage logging
 - [x] Advisory cost estimation CLI
 
 ### Milestone 3 — Model Routing
@@ -613,7 +677,7 @@ Future possibilities:
 - [x] Provider interfaces
 - [x] Routing rules
 - [x] Route preview command
-- [ ] Local provider support
+- [x] LM Studio local provider support
 - [ ] Hosted provider support
 - [ ] Escalation execution flow
 
@@ -631,7 +695,7 @@ Future possibilities:
 
 - [x] Architecture documentation
 - [x] Example project
-- [ ] Demo screenshots or GIF
+- [x] First-run terminal demonstration
 - [x] Public roadmap
 - [x] Usage examples
 
@@ -659,7 +723,7 @@ Friday explores what a more deliberate AI development workflow could look like.
 Friday uses Fallow in two ways:
 
 - Fast gating in `npm run check` via `npm run fallow` (`fallow --ci`)
-- Saved report artifacts for review and triage
+- Saved report artefacts for review and triage
 
 Useful commands:
 

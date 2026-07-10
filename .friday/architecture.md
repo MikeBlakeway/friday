@@ -118,14 +118,15 @@ hosted provider execution is not.
 - **Local context versus hosted services:** routing and privacy logic exists, but
   future provider execution must apply those gates before any context is sent
   outside the developer environment.
-- **Global versus project memory:** global developer preferences and project
-  context are conceptually distinct. The current implementation starts only with
-  per-project memory in `.friday/`.
+- **Global versus project memory:** optional reusable developer preferences live
+  under `~/.friday/`; repository context lives under `.friday/`. Machine-level
+  provider configuration is global configuration, not prompt memory.
 
 ## Future Architecture Areas
 
-- Add real local and hosted provider implementations behind the existing
-  provider interfaces and safety gates.
-- Add usage logging, budget policy, and cost reporting.
+- Add hosted provider implementations behind the existing interfaces and safety
+  gates; local LM Studio execution is already implemented.
+- Add budget policy and aggregate cost reporting on top of existing local usage
+  logging.
 - Add repeatable brainstorming, specification, refactoring, and escalation
   workflows built on the same core memory and evidence boundaries.

@@ -2,10 +2,8 @@
 
 ## Backlog
 
-- [ ] Improve the GitHub portfolio presentation with screenshots or terminal
-      captures.
-- [ ] Add post-MVP usage telemetry and budget reporting.
-- [ ] Add post-MVP provider execution behind privacy, secret, routing, and cost
+- [ ] Add post-MVP aggregate usage reporting and budget policy.
+- [ ] Add hosted-provider execution behind privacy, secret, routing, and cost
       gates.
 
 ## Done
@@ -42,20 +40,23 @@
       into the `plan` and `review` command output.
 - [x] Create an example project that demonstrates useful Friday memory and planning
       output.
-- [x] Define the MVP as a no-provider local workflow engine.
+- [x] Define the MVP around deterministic preparation and explicit local-model
+      execution.
 - [x] Reconcile public docs and project memory with the current implemented state.
 - [x] Prepare Friday v0.1.0 release packaging and release notes.
 - [x] Add guided LM Studio discovery, model selection, global configuration, and
       optional verification through `friday local setup`.
 - [x] Add one-command local plan and review execution while preserving prompt,
       result, and usage artefacts.
+- [x] Polish onboarding, grouped CLI help, recovery guidance, terminal examples,
+      and the Friday-on-Friday walkthrough.
 
 ## Later
 
 - [ ] Add global developer memory and policy files alongside per-project memory.
 - [ ] Integrate hosted providers only behind privacy, secret-detection, and
       cost-policy gates.
-- [ ] Add usage logging, budgets, and cost reports by task, provider, and model.
+- [ ] Add budgets and aggregate cost reports by task, provider, and model.
 - [ ] Add repeatable refactoring and shipping workflows.
 - [ ] Explore a richer local cockpit interface once the CLI engine is proven.
 - [ ] Explore voice interaction only after the core workflows are stable and useful.

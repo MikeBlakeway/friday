@@ -51,5 +51,8 @@ export async function runInitCommand(options: { projectRoot: string }): Promise<
   }
 
   console.log('')
-  console.log('Next steps: run "friday status" and start filling in your .friday memory files.')
+  console.log('Next steps:')
+  console.log('  1. Fill in the new .friday memory files.')
+  console.log('  2. Run "friday evidence --collect".')
+  console.log('  3. Run "friday run plan \"Recommend the next useful improvement\"".')
 }

@@ -97,7 +97,7 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
 
   if (!promptPathArg || promptPathArg.startsWith('--')) {
     throw new Error(
-      'A generated prompt artifact is required. Usage: friday execute <prompt-path> --provider local',
+      'A generated prompt artefact is required. Usage: friday execute <prompt-path> --provider local',
     )
   }
 

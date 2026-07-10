@@ -60,7 +60,7 @@ async function main(): Promise<void> {
 
       if (subcommand !== 'setup') {
         throw new Error(
-          'Unknown or missing friday local subcommand. Usage: friday local setup [options]',
+          'Unknown or missing friday local subcommand. Run "friday local setup" to configure a local provider and model.',
         )
       }
 

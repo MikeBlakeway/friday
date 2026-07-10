@@ -235,7 +235,7 @@ export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Pr
 
   console.log('')
   console.log('Friday workflow executed locally.')
-  console.log(`Prompt artifact: ${result.promptArtifact}`)
-  console.log(`Result artifact: ${result.resultArtifact}`)
+  console.log(`Prompt artefact: ${result.promptArtifact}`)
+  console.log(`Result artefact: ${result.resultArtifact}`)
   console.log(`Usage: ${result.usage.totalTokens} total tokens`)
 }

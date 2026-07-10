@@ -119,7 +119,7 @@ describe('resolveLocalModelProvider', () => {
     await expect(
       resolveLocalModelProvider({ homeDir, fetch: createModelsFetch(['qwen']) }),
     ).rejects.toThrow(
-      'Configured default provider "ollama" is not supported yet. Friday currently discovers lm-studio only.',
+      'Configured default provider "ollama" is not supported yet. Run "friday local setup" to configure the supported LM Studio provider.',
     )
   })
 

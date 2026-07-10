@@ -10,7 +10,7 @@ The log is stored under the project-owned runtime directory:
 
 Each line is a versioned JSON record. Schema version `1` captures:
 
-- workflow type and optional Friday artifact path
+- workflow type and optional Friday artefact path
 - recommended route and chosen route
 - chosen provider and model
 - start and completion timestamps
@@ -26,7 +26,7 @@ The log remains local. Friday does not upload, synchronise, or send it to an ana
 
 Execution log records are metadata-only by default. They do not store raw prompts, model output text, detected secret values, API keys, or private content snippets. When a secret is detected, the log can record `secretDetected: true`, but not the matched secret itself.
 
-The execution artifact may still contain provider output for an explicit local run. The usage log is intentionally narrower because its purpose is historical routing and outcome analysis, not replaying prompts.
+The execution artefact may still contain provider output for an explicit local run. The usage log is intentionally narrower because its purpose is historical routing and outcome analysis, not replaying prompts.
 
 ## Reading and summaries
 
