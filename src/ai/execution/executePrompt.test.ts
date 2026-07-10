@@ -8,6 +8,7 @@ import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { createMockModelProvider } from '../providers/mockModelProvider.js'
 import type { MockModelProvider } from '../providers/mockModelProvider.js'
 import type { GenerateModelResponseResult } from '../providers/modelProvider.js'
+import { readExecutionLogRecords } from '../usage/executionLog.js'
 import { executePrompt, type AvailableLocalModelProvider } from './executePrompt.js'
 
 const tempDirs: string[] = []
@@ -134,6 +135,44 @@ describe('executePrompt', () => {
         totalTokens: 14,
       },
     })
+
+    await expect(readExecutionLogRecords(projectRoot)).resolves.toMatchObject([
+      {
+        schemaVersion: 1,
+        id: '.friday/output/executions/plan-prompt-2026-07-10T10-20-30-000Z.json',
+        workflow: {
+          type: 'plan',
+          artifact: '.friday/output/plan-prompt.md',
+        },
+        recommendedRoute: {
+          provider: 'local',
+          model: 'local-coder',
+        },
+        chosenRoute: {
+          provider: 'local',
+          model: 'local-coder',
+        },
+        provider: 'mock-local',
+        model: 'mock-coder',
+        startedAt: '2026-07-10T10:20:30.000Z',
+        completedAt: '2026-07-10T10:20:30.000Z',
+        latencyMs: 0,
+        usage: {
+          inputTokens: 8,
+          outputTokens: 6,
+          totalTokens: 14,
+        },
+        result: {
+          status: 'succeeded',
+          artifact: '.friday/output/executions/plan-prompt-2026-07-10T10-20-30-000Z.json',
+        },
+        privacy: {
+          privacyLevel: 'internal',
+          blocked: false,
+          secretDetected: false,
+        },
+      },
+    ])
   })
 
   it('blocks secret-bearing input before invoking the provider', async () => {

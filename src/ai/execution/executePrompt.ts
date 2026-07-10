@@ -11,6 +11,7 @@ import type {
   GenerateModelResponseRequest,
   GenerateModelResponseResult,
 } from '../providers/modelProvider.js'
+import { appendExecutionLogRecord, createExecutionLogRecord } from '../usage/executionLog.js'
 import { ensureDir, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 
 export type ExecutionProviderChoice = 'local'
@@ -184,6 +185,7 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
 
   const prompt = await readTextFile(options.request.promptPath)
   const promptArtifact = relativeToProject(options.projectRoot, options.request.promptPath)
+  const executionStartedAt = options.now?.() ?? new Date()
   const routeSummary = composeAiRouteRecommendation({
     prompt,
     filePath: options.request.promptPath,
@@ -203,9 +205,10 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
   )
   assertValidProviderResult(providerResult)
 
+  const executionCompletedAt = options.now?.() ?? new Date()
   const resultArtifactPath = inferResultArtifactPath(
     options.request.promptPath,
-    options.now?.() ?? new Date(),
+    executionCompletedAt,
   )
   const costEstimate = estimateAiUsageCost({
     pricing: findPricing('local', 'local-coder'),
@@ -231,6 +234,35 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
 
   await ensureDir(path.dirname(resultArtifactPath))
   await writeTextFile(resultArtifactPath, createArtifactJson(result))
+  await appendExecutionLogRecord(
+    options.projectRoot,
+    createExecutionLogRecord({
+      id: result.resultArtifact,
+      workflow: {
+        type: options.request.taskType,
+        artifact: promptArtifact,
+      },
+      recommendedRoute: routeSummary.recommendation.route,
+      chosenRoute: result.route,
+      provider: result.provider,
+      model: result.model,
+      startedAt: executionStartedAt.toISOString(),
+      completedAt: executionCompletedAt.toISOString(),
+      latencyMs: Math.max(0, executionCompletedAt.getTime() - executionStartedAt.getTime()),
+      usage: result.usage,
+      costEstimate: result.costEstimate,
+      result: {
+        status: 'succeeded',
+        stopReason: result.stopReason,
+        artifact: result.resultArtifact,
+      },
+      privacy: {
+        privacyLevel: result.classification.privacyLevel,
+        blocked: result.classification.blocked,
+        secretDetected: result.classification.secrets.length > 0,
+      },
+    }),
+  )
 
   return result
 }
