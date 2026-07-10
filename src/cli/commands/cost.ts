@@ -2,37 +2,8 @@ import { estimateAiUsageCost } from '../../ai/pricing/estimateAiUsageCost.js'
 import type {
   AiUsageCostEstimate,
   EstimateAiUsageCostInput,
-  ModelPricingConfiguration,
 } from '../../ai/pricing/pricingModel.js'
-
-const PRICING_SOURCE = 'Friday local MVP advisory pricing configuration'
-
-const pricingConfigurations = [
-  {
-    provider: 'deepseek',
-    model: 'deepseek-v4-flash',
-    currency: 'USD',
-    inputTokenPricePerMillion: 0.15,
-    outputTokenPricePerMillion: 0.6,
-    source: PRICING_SOURCE,
-  },
-  {
-    provider: 'deepseek',
-    model: 'deepseek-v4-pro',
-    currency: 'USD',
-    inputTokenPricePerMillion: 0.55,
-    outputTokenPricePerMillion: 2.19,
-    source: PRICING_SOURCE,
-  },
-  {
-    provider: 'anthropic',
-    model: 'claude-opus',
-    currency: 'USD',
-    inputTokenPricePerMillion: 15,
-    outputTokenPricePerMillion: 75,
-    source: PRICING_SOURCE,
-  },
-] as const satisfies readonly ModelPricingConfiguration[]
+import { findPricing } from '../../ai/pricing/advisoryPricing.js'
 
 function parseRequiredValue(args: string[], index: number, flag: string): string {
   const value = args[index + 1]
@@ -52,24 +23,6 @@ function parseTokenCount(flag: string, value: string): number {
   }
 
   return tokenCount
-}
-
-function getAvailablePricingMessage(): string {
-  return pricingConfigurations.map((pricing) => `${pricing.provider}/${pricing.model}`).join(', ')
-}
-
-function findPricing(provider: string, model: string): ModelPricingConfiguration {
-  const pricing = pricingConfigurations.find(
-    (candidate) => candidate.provider === provider && candidate.model === model,
-  )
-
-  if (!pricing) {
-    throw new Error(
-      `Unsupported provider/model pricing: ${provider}/${model}. Available pricing: ${getAvailablePricingMessage()}.`,
-    )
-  }
-
-  return pricing
 }
 
 function assertRequiredOption<T>(flag: string, value: T | undefined): T {

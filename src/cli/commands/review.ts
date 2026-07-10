@@ -9,6 +9,7 @@ import { parseManualEvidence } from '../../ai/evidence/loadManualEvidence.js'
 import { ensureDir, pathExists, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
+import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
 
 const execFileAsync = promisify(execFile)
 const FRIDAY_OUTPUT_DIR = 'output'
@@ -112,6 +113,14 @@ export async function runReviewCommand(options: {
   const projectMemory = await loadProjectMemory(options.projectRoot)
   const changedFiles = await loadChangedFiles(options.projectRoot)
   const result = buildReviewPrompt({ changedFiles, projectMemory, evidence })
+  const aiWorkflowSummary = buildAiWorkflowSummary({
+    prompt: result.prompt,
+    taskType: 'review',
+    complexity: 'high',
+    confidenceRequirement: 'high',
+    costPreference: 'balanced',
+    estimatedOutputTokens: 1000,
+  })
 
   const outputDirPath = path.join(fridayProjectDirPath, FRIDAY_OUTPUT_DIR)
   const outputPath = path.join(outputDirPath, REVIEW_PROMPT_FILE)
@@ -146,6 +155,12 @@ export async function runReviewCommand(options: {
   console.log('Output:')
   console.log(`.friday/${FRIDAY_OUTPUT_DIR}/${REVIEW_PROMPT_FILE}`)
   console.log('')
+  printAiWorkflowSummary(aiWorkflowSummary)
+  console.log('')
   console.log('Next step:')
-  console.log('Inspect this prompt locally, then paste it into your chosen AI model.')
+  if (aiWorkflowSummary.routeSummary.recommendation.route.blocked) {
+    console.log('Remove or redact blocked context before using any AI model route.')
+  } else {
+    console.log('Inspect this prompt and route summary before using the recommended model route.')
+  }
 }

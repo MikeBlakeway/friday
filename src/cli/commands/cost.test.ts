@@ -72,7 +72,7 @@ describe('parseCostEstimateArgs', () => {
         '2000',
       ]),
     ).toThrow(
-      'Unsupported provider/model pricing: openai/deepseek-v4-flash. Available pricing: deepseek/deepseek-v4-flash, deepseek/deepseek-v4-pro, anthropic/claude-opus.',
+      'Unsupported provider/model pricing: openai/deepseek-v4-flash. Available pricing: local/local-coder, deepseek/deepseek-v4-flash, deepseek/deepseek-v4-pro, anthropic/claude-opus.',
     )
   })
 })
