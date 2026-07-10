@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 
 export async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -37,4 +37,8 @@ export async function readTextFile(filePath: string): Promise<string> {
 
 export async function writeTextFile(filePath: string, content: string): Promise<void> {
   await writeFile(filePath, content, { encoding: 'utf8' })
+}
+
+export async function appendTextFile(filePath: string, content: string): Promise<void> {
+  await appendFile(filePath, content, { encoding: 'utf8' })
 }

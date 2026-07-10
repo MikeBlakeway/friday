@@ -188,9 +188,11 @@ This workflow creates inspectable local artefacts and route recommendations.
 `friday execute` is a deliberate second step that reads an existing prompt,
 requires `--provider local`, rejects secret or blocked content before provider
 invocation, checks local provider availability, and writes the model result under
-`.friday/output/executions/`. `friday cost` provides an advisory local estimate
-from configured provider/model pricing and estimated token counts, while
-brainstorming, specification, hosted provider execution, usage telemetry, and
+`.friday/output/executions/`. It also appends metadata-only local usage history
+under `.friday/runtime/execution-log.jsonl`; see
+[local usage logging](./docs/local-usage-logging.md). `friday cost` provides an
+advisory local estimate from configured provider/model pricing and estimated
+token counts, while brainstorming, specification, hosted provider execution, and
 explicit escalation commands remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce

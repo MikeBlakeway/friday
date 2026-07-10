@@ -51,8 +51,10 @@ or planned extensions. The current CLI builds local artefacts, loads global and
 project memory, classifies privacy risk, detects common secrets, recommends
 model routes, and estimates cost advisorially. Model calls happen only through
 the explicit `friday execute --provider local` boundary; the CLI does not load
-provider API keys, invoke hosted providers, log real usage, or provide a cockpit
-UI. The provider layer includes an optional LM Studio adapter that can be invoked
+provider API keys, invoke hosted providers, upload telemetry, or provide a
+cockpit UI. Local execution metadata can be appended under
+`.friday/runtime/execution-log.jsonl` for routing and outcome analysis. The
+provider layer includes an optional LM Studio adapter that can be invoked
 explicitly behind the same routing and privacy boundaries.
 
 ## Implemented Commands
@@ -91,6 +93,8 @@ explicitly behind the same routing and privacy boundaries.
   per-million token prices.
 - `src/ai/providers/` owns provider-neutral model contracts, the mock provider,
   and the optional LM Studio local provider adapter.
+- `src/ai/usage/` owns the local execution log schema, append/read helpers, and
+  summary helpers for workflow, provider/model, retry, and escalation counts.
 
 ## Current Data Flow
 
