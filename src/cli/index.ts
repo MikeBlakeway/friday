@@ -6,6 +6,7 @@ import { runCostCommand } from './commands/cost.js'
 import { runDoctorCommand } from './commands/doctor.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
+import { runLocalSetupCommand } from './commands/localSetup.js'
 import { runPlanCommand } from './commands/plan.js'
 import { runReviewCommand } from './commands/review.js'
 import { runRouteCommand } from './commands/route.js'
@@ -51,6 +52,18 @@ async function main(): Promise<void> {
       if (!report.ready) {
         process.exitCode = 1
       }
+      return
+    }
+    case 'local': {
+      const subcommand = process.argv[3]
+
+      if (subcommand !== 'setup') {
+        throw new Error(
+          'Unknown or missing friday local subcommand. Usage: friday local setup [options]',
+        )
+      }
+
+      await runLocalSetupCommand({ args: process.argv.slice(4) })
       return
     }
     case 'review':

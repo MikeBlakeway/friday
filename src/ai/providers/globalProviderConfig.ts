@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 
-import { pathExists, readTextFile } from '../../core/fileSystem.js'
+import { ensureDir, pathExists, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 
 export const GLOBAL_PROVIDER_CONFIG_SCHEMA_VERSION = 1
 export const GLOBAL_PROVIDER_CONFIG_FILE = 'providers.json'
@@ -28,6 +28,11 @@ export type LoadGlobalProviderConfigurationResult =
       filePath: string
       configuration: GlobalProviderConfiguration
     }
+
+export interface SaveGlobalProviderConfigurationResult {
+  filePath: string
+  configuration: GlobalProviderConfiguration
+}
 
 export class GlobalProviderConfigurationError extends Error {
   constructor(message: string) {
@@ -171,20 +176,16 @@ function parseConfiguration(value: unknown, filePath: string): GlobalProviderCon
       ]
     }),
   )
-  const configuration: GlobalProviderConfiguration = {
+  const defaultProvider =
+    value.defaultProvider === undefined
+      ? undefined
+      : assertNonEmptyString(value.defaultProvider, 'defaultProvider', filePath)
+
+  return {
     schemaVersion: GLOBAL_PROVIDER_CONFIG_SCHEMA_VERSION,
+    ...(defaultProvider === undefined ? {} : { defaultProvider }),
     providers,
   }
-
-  if (value.defaultProvider !== undefined) {
-    configuration.defaultProvider = assertNonEmptyString(
-      value.defaultProvider,
-      'defaultProvider',
-      filePath,
-    )
-  }
-
-  return configuration
 }
 
 export async function loadGlobalProviderConfiguration(
@@ -210,4 +211,27 @@ export async function loadGlobalProviderConfiguration(
     filePath,
     configuration: parseConfiguration(value, filePath),
   }
+}
+
+export async function saveGlobalProviderConfiguration(
+  configuration: GlobalProviderConfiguration,
+  homeDir: string = os.homedir(),
+): Promise<SaveGlobalProviderConfigurationResult> {
+  const filePath = path.join(homeDir, '.friday', GLOBAL_PROVIDER_CONFIG_FILE)
+  const validatedConfiguration = validateGlobalProviderConfiguration(configuration, homeDir)
+
+  await ensureDir(path.dirname(filePath))
+  await writeTextFile(filePath, `${JSON.stringify(validatedConfiguration, null, 2)}\n`)
+
+  return { filePath, configuration: validatedConfiguration }
+}
+
+export function validateGlobalProviderConfiguration(
+  configuration: GlobalProviderConfiguration,
+  homeDir: string = os.homedir(),
+): GlobalProviderConfiguration {
+  return parseConfiguration(
+    configuration,
+    path.join(homeDir, '.friday', GLOBAL_PROVIDER_CONFIG_FILE),
+  )
 }

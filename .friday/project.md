@@ -34,8 +34,9 @@ prompt privacy, detect common secrets, estimate advisory usage cost through the
 `friday cost` CLI, print local AI policy summaries in `plan` and `review`, and
 define provider-agnostic model contracts.
 
-Friday still does not call real AI providers, load API keys, stream model output,
-log real provider usage, enforce budgets, or publish telemetry.
+Friday can discover, configure, diagnose, and explicitly execute through a local
+LM Studio provider. It still does not call hosted providers, load API keys,
+stream model output, enforce budgets, or publish telemetry.
 
 ## Core Goals
 
@@ -59,8 +60,8 @@ log real provider usage, enforce budgets, or publish telemetry.
 
 - Runtime: Node.js
 - Language: TypeScript with native ES modules
-- CLI: local Node.js executable with `init`, `status`, `evidence`, `plan`,
-  `review`, `route`, and `cost` commands
+- CLI: local Node.js executable with `init`, `status`, `doctor`, `local setup`,
+  `evidence`, `plan`, `review`, `execute`, `route`, and `cost` commands
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`

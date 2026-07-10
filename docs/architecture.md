@@ -17,7 +17,7 @@ flowchart TD
   CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, execute, route, cost]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, doctor, local setup, evidence, plan, review, execute, route, cost]
 
   CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentProjectMemory --> PromptBuilders
@@ -36,6 +36,9 @@ flowchart TD
   LocalOutputs --> ExecuteBoundary[Current: explicit local execution<br/>friday execute --provider local]
   ExecuteBoundary --> PrivacySafety
   ExecuteBoundary --> GlobalProviderConfig[Current: optional machine config<br/>~/.friday/providers.json]
+  CLI --> GuidedSetup[Current: guided local setup<br/>discovery, selection, explicit start consent]
+  GuidedSetup --> GlobalProviderConfig
+  GuidedSetup --> CurrentLocalProvider
   GlobalProviderConfig --> CurrentLocalProvider
   ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
@@ -51,8 +54,9 @@ flowchart TD
 Solid arrows show the current local-first workflow. Dotted arrows show optional
 or planned extensions. The current CLI builds local artefacts, loads global and
 project memory, classifies privacy risk, detects common secrets, recommends
-model routes, and estimates cost advisorially. Model calls happen only through
-the explicit `friday execute --provider local` boundary; the CLI does not load
+model routes, and estimates cost advisorially. Workflow model calls happen through
+the explicit `friday execute --provider local` boundary, while guided setup can
+send an optional verification request; the CLI does not load
 provider API keys, invoke hosted providers, upload telemetry, or provide a
 cockpit UI. Local execution metadata can be appended under
 `.friday/runtime/execution-log.jsonl` for routing and outcome analysis. The
@@ -64,6 +68,11 @@ the same routing and privacy boundaries.
 
 - `friday init` creates the standard `.friday/` project-memory files.
 - `friday status` reports whether the expected project-memory files exist.
+- `friday doctor [--test-provider]` reports runtime, memory, configuration, and
+  local-provider readiness without changing setup.
+- `friday local setup` discovers LM Studio, selects a loaded model, saves global
+  provider configuration, and optionally verifies generation. Server startup
+  requires prompt confirmation or `--start-server`.
 - `friday evidence` prepares `.friday/evidence/` files and writes an
   inspectable `evidence-pack.json`.
 - `friday plan <goal...>` writes `.friday/output/plan-prompt.md` from optional
@@ -134,12 +143,19 @@ the recommendation.
 `friday cost` is advisory. It accepts explicit provider, model, and estimated
 token counts, then prints deterministic input, output, and total cost estimates.
 
-`friday execute` is the only model-calling command. It reads an existing prompt
+`friday execute` is the workflow model-calling command. It reads an existing prompt
 artefact, re-runs privacy and secret classification, routes with hosted models
 disabled, requires `--provider local`, loads optional configuration from
 `~/.friday/providers.json`, discovers LM Studio at common localhost endpoints,
 selects a loaded model, and writes a separate execution result under
 `.friday/output/executions/`.
+
+`friday local setup` is the machine-configuration boundary. It validates local
+endpoint settings, discovers loaded LM Studio models, resolves one model through
+automatic or interactive selection, and writes `~/.friday/providers.json` for
+later `doctor` and `execute` commands. It can make an explicit lightweight test
+request. It never downloads models, and it runs `lms server start` only after an
+interactive confirmation or an explicit `--start-server` flag.
 
 ## Boundaries
 
