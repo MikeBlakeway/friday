@@ -5,20 +5,21 @@
 Friday is a local, CLI-first TypeScript application. Its current architecture keeps
 project memory, deterministic evidence, prompt construction, command handling,
 privacy classification, route policy, cost estimation, and provider contracts
-separate so later model execution can be added without coupling provider behavior
+separate so model execution does not couple provider behavior
 to file-system concerns.
 
 Per-project memory lives in `.friday/` beside the source repository. The CLI reads
 that memory, builds structured planning and review prompts, writes generated
 artefacts back to `.friday/output/`, and prints local AI policy summaries for
-route and cost decisions. Friday does not call a real AI provider in the current
-implementation.
+route and cost decisions. Explicit local LM Studio execution is implemented;
+hosted provider execution is not.
 
 ## Current Modules
 
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
   `friday init`, `friday status`, `friday evidence`, `friday plan`,
-  `friday review`, `friday route`, and `friday cost`.
+  `friday review`, `friday route`, `friday cost`, `friday doctor`,
+  `friday local setup`, and `friday execute`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
 - **File-system helpers** — provide small async operations for checking paths and
@@ -40,7 +41,8 @@ implementation.
 - **Cost estimation** — estimates advisory input, output, and total model cost
   from configured per-million token prices and estimated token counts.
 - **Provider contracts** — define provider-neutral model request, response,
-  usage, capability, and mock-provider interfaces for future execution.
+  usage, capability, and mock-provider interfaces, plus validated global
+  configuration, LM Studio discovery, guided setup, and explicit local execution.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
   `.friday/output/review-prompt.md` so they are inspectable before any model use.

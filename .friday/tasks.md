@@ -45,11 +45,12 @@
 - [x] Define the MVP as a no-provider local workflow engine.
 - [x] Reconcile public docs and project memory with the current implemented state.
 - [x] Prepare Friday v0.1.0 release packaging and release notes.
+- [x] Add guided LM Studio discovery, model selection, global configuration, and
+      optional verification through `friday local setup`.
 
 ## Later
 
 - [ ] Add global developer memory and policy files alongside per-project memory.
-- [ ] Integrate local models after routing and privacy policy are implemented.
 - [ ] Integrate hosted providers only behind privacy, secret-detection, and
       cost-policy gates.
 - [ ] Add usage logging, budgets, and cost reports by task, provider, and model.

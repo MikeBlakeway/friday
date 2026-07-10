@@ -42,6 +42,46 @@ Friday never silently starts provider processes.
 Provider configuration is separate from repository `.friday/` memory. Do not
 commit machine-level `providers.json` into individual projects.
 
+## Guided Setup
+
+Run the one-time guided setup after installing LM Studio and loading a model:
+
+```bash
+friday local setup
+```
+
+The command:
+
+1. detects whether the `lms` CLI is available;
+2. queries the configured or common localhost `/v1/models` endpoints;
+3. automatically selects one loaded model or presents multiple models in the
+   order returned by LM Studio;
+4. writes the provider, endpoint, selected model, and `autoStart: false` to
+   `~/.friday/providers.json` while preserving other provider entries; and
+5. offers a small generation request to verify the saved setup.
+
+If `lms` is available but the server is stopped, Friday asks before running
+`lms server start`. A declined prompt cancels without changing configuration.
+The `--start-server` flag is the equivalent explicit authorization for an
+unattended invocation; Friday never starts a process merely because
+`autoStart` appears in configuration.
+
+Non-interactive use requires all provider settings so model selection cannot
+block waiting for input:
+
+```bash
+friday local setup \
+  --provider lm-studio \
+  --base-url http://127.0.0.1:1234/v1 \
+  --model qwen3-coder-14b \
+  --test
+```
+
+Omit `--test` to save a verified endpoint/model selection without sending a
+generation request. Friday does not download or load models. Missing CLI,
+unavailable server, no-model, invalid endpoint, unavailable model, start
+failure, and test failure messages include the next corrective action.
+
 ## Discovery and Model Selection
 
 Friday queries the OpenAI-compatible `/v1/models` endpoint and reads the loaded
@@ -49,8 +89,9 @@ model identifiers. Selection is deterministic:
 
 1. Use `providers.lm-studio.model` when that identifier is loaded.
 2. Automatically use the only loaded model when exactly one is available.
-3. When multiple models are loaded without a usable configured default, list
-   them and ask the user to set `providers.lm-studio.model`.
+3. During `friday local setup`, when multiple models are loaded without a usable
+   configured default, list them and ask the user to choose one. Other commands
+   ask the user to run setup or set `providers.lm-studio.model`.
 4. When the server has no loaded models, ask the user to load one and retry.
 
 This removes the previous requirement to alias a model as `local-model`.
@@ -71,7 +112,8 @@ const provider = createLmStudioProvider({
 For direct construction, pass the exact loaded model identifier. The normal CLI
 path resolves this identifier through configuration and discovery. The adapter
 does not download models, start LM Studio, read API keys, or send requests to
-hosted providers.
+hosted providers. Process startup belongs only to the guided setup command and
+requires prompt confirmation or the explicit `--start-server` flag.
 
 ## Availability
 

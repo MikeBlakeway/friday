@@ -12,6 +12,7 @@ import {
   type LmStudioDiscoveryResult,
 } from '../../ai/providers/localProviderDiscovery.js'
 import { createLmStudioProvider, type LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
+import { testLocalProvider } from '../../ai/providers/testLocalProvider.js'
 import { pathExists } from '../../core/fileSystem.js'
 import { loadGlobalMemory } from '../../core/globalMemory.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
@@ -396,20 +397,7 @@ async function providerSection(input: {
     })
 
     try {
-      const response = await provider.generateResponse({
-        taskType: 'plan',
-        privacyLevel: 'public',
-        messages: [
-          {
-            role: 'user',
-            content: 'Reply with OK to confirm the local provider is ready.',
-          },
-        ],
-        output: { modality: 'text' },
-        maxOutputTokens: 8,
-        temperature: 0,
-        metadata: { purpose: 'friday-doctor' },
-      })
+      const response = await testLocalProvider(provider, 'friday-doctor')
 
       checks.push({
         status: 'passed',

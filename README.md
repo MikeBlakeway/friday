@@ -92,6 +92,7 @@ The MVP-critical command path is:
 
 ```bash
 friday init
+friday local setup
 friday doctor
 friday evidence
 friday plan "<goal>"
@@ -137,6 +138,7 @@ Friday is currently in early development. The initial focus is on the core engin
 
 - [x] Provider-agnostic model interface
 - [x] Optional LM Studio local provider adapter
+- [x] Guided `friday local setup`
 - [ ] DeepSeek provider support (post-MVP)
 - [ ] OpenAI provider support (post-MVP)
 - [ ] Anthropic provider support (post-MVP)
@@ -176,6 +178,7 @@ The current local workflow uses the implemented local commands:
 
 ```bash
 friday init
+friday local setup
 friday evidence
 friday plan "Build a lightweight AI code review assistant"
 friday review --changed
@@ -185,6 +188,9 @@ friday execute .friday/output/plan-prompt.md --provider local
 ```
 
 This workflow creates inspectable local artefacts and route recommendations.
+`friday local setup` is a one-time, machine-level step that discovers LM Studio,
+selects a loaded model, and writes reusable settings under `~/.friday/`; it does
+not add provider configuration to the current repository.
 `friday plan` and `friday review` only prepare prompt artefacts by default.
 `friday execute` is a deliberate second step that reads an existing prompt,
 requires `--provider local`, rejects secret or blocked content before provider
@@ -215,6 +221,37 @@ GitHub release asset or a local package tarball rather than the npm registry:
 npm install -g ./friday-0.1.0.tgz
 friday help
 ```
+
+### First-time local model setup
+
+Install and launch LM Studio, load at least one model, and start its local server.
+Then run:
+
+```bash
+friday local setup
+```
+
+Friday detects the `lms` CLI and the OpenAI-compatible local server, lists the
+loaded models, automatically selects a single model or asks you to choose when
+several are available, and saves the result to `~/.friday/providers.json`. It
+then offers a small test request. If the `lms` CLI is available but the server is
+stopped, Friday offers to run `lms server start`; declining cancels setup without
+changing configuration. Friday never downloads or loads a model for you.
+
+For CI, scripts, or other non-interactive environments, provide every required
+setting explicitly. Add `--test` to verify generation, or `--start-server` to
+explicitly authorize the server-start process:
+
+```bash
+friday local setup \
+  --provider lm-studio \
+  --base-url http://127.0.0.1:1234/v1 \
+  --model qwen3-coder-14b \
+  --test
+```
+
+Setup errors explain how to handle a missing CLI, stopped or unavailable server,
+no loaded models, an unavailable selected model, and a failed test request.
 
 Check the installation, current project memory, optional global configuration,
 and LM Studio readiness in one support-friendly report:
@@ -442,25 +479,28 @@ and inspect per-project memory, collect deterministic local evidence, build
 planning and review prompts from local context, print privacy-aware route and
 cost summaries for those workflows, preview model routes, classify privacy risk,
 detect common secrets, estimate advisory model costs, and define
-provider-agnostic model contracts. It still does not call real AI providers.
+provider-agnostic model contracts. It can explicitly execute through a local LM
+Studio provider, but it does not call hosted AI providers.
 
 Implemented CLI commands:
 
 - `friday init`
 - `friday status`
 - `friday doctor [--test-provider]`
+- `friday local setup [--provider lm-studio --base-url <url> --model <id>] [--start-server] [--test]`
 - `friday evidence`
 - `friday plan <goal...>`
 - `friday review --changed`
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
+- `friday execute <prompt-path> --provider local`
 
 Planned CLI commands include `friday brainstorm`, `friday spec`, `friday design`,
 and `friday escalate`.
 
 Friday now includes a pure model-routing domain layer that recommends blocked,
 local, cheap hosted, strong hosted, or premium routes from task and policy input.
-It makes no provider calls: provider integrations and real AI requests remain
+The route preview makes no provider calls; hosted provider integrations remain
 planned work.
 
 Friday also includes a provider-agnostic `friday cost` command backed by the
