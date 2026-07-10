@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { runEvidenceCommand } from './commands/evidence.js'
+import { runCostCommand } from './commands/cost.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runPlanCommand } from './commands/plan.js'
@@ -35,6 +36,9 @@ async function main(): Promise<void> {
       return
     case 'route':
       runRouteCommand(process.argv.slice(3))
+      return
+    case 'cost':
+      runCostCommand(process.argv.slice(3))
       return
     case 'review':
       await runReviewCommand({

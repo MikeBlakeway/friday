@@ -104,7 +104,6 @@ the recommendation.
 
 - Compose privacy classification, route recommendation, and cost estimates into
   `plan` and `review` command output.
-- Add a real `friday cost` command.
 - Add automatic deterministic evidence collection for Git, TypeScript, tests,
   and Fallow.
 - Add usage logging and budget reporting.
