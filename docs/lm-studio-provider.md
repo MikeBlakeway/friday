@@ -6,11 +6,56 @@ server, and Friday talks to that server only through the provider-neutral
 `AiModelProvider` contract in `src/ai/providers/modelProvider.ts`.
 
 The preparation CLI workflow commands still work without LM Studio installed or
-running. `friday execute <prompt-path> --provider local` constructs this adapter
-explicitly and fails before writing an execution result if LM Studio is not
-available.
+running. `friday execute <prompt-path> --provider local` discovers LM Studio and
+its loaded models before constructing the adapter. It fails before writing an
+execution result if the service or a usable model is not available.
 
-## Configuration
+## Global Provider Configuration
+
+Machine-specific provider settings are optional and live outside repositories
+at `~/.friday/providers.json`. The current schema is versioned and deliberately
+accepts only local endpoint, model, and process-start policy fields:
+
+```json
+{
+  "schemaVersion": 1,
+  "defaultProvider": "lm-studio",
+  "providers": {
+    "lm-studio": {
+      "baseUrl": "http://127.0.0.1:1234/v1",
+      "model": "qwen3-coder-14b",
+      "autoStart": false
+    }
+  }
+}
+```
+
+The file is not required. When it is missing, Friday discovers LM Studio at the
+common endpoints `http://127.0.0.1:1234/v1` and
+`http://localhost:1234/v1`.
+
+Configuration is validated before discovery. Base URLs must use plain HTTP on
+`localhost`, `127.0.0.1`, or `::1`; credential fields and arbitrary fields are
+rejected. `autoStart` is reserved for future work and must remain `false` because
+Friday never silently starts provider processes.
+
+Provider configuration is separate from repository `.friday/` memory. Do not
+commit machine-level `providers.json` into individual projects.
+
+## Discovery and Model Selection
+
+Friday queries the OpenAI-compatible `/v1/models` endpoint and reads the loaded
+model identifiers. Selection is deterministic:
+
+1. Use `providers.lm-studio.model` when that identifier is loaded.
+2. Automatically use the only loaded model when exactly one is available.
+3. When multiple models are loaded without a usable configured default, list
+   them and ask the user to set `providers.lm-studio.model`.
+4. When the server has no loaded models, ask the user to load one and retry.
+
+This removes the previous requirement to alias a model as `local-model`.
+
+## Code-Level Configuration
 
 Create the provider explicitly from code:
 
@@ -23,12 +68,8 @@ const provider = createLmStudioProvider({
 })
 ```
 
-Defaults are intentionally local:
-
-- `baseUrl`: `http://127.0.0.1:1234/v1`
-- `model`: `local-model`
-
-Use the exact model identifier shown by LM Studio for best results. The adapter
+For direct construction, pass the exact loaded model identifier. The normal CLI
+path resolves this identifier through configuration and discovery. The adapter
 does not download models, start LM Studio, read API keys, or send requests to
 hosted providers.
 
@@ -69,6 +110,9 @@ friday execute .friday/output/plan-prompt.md --provider local
 The execute command:
 
 - requires the explicit `--provider local` flag;
+- loads optional configuration from `~/.friday/providers.json`;
+- discovers LM Studio and resolves a loaded model without relying on a fixed
+  alias;
 - re-runs privacy and secret classification for the prompt file;
 - routes with hosted providers disabled;
 - rejects blocked or secret-bearing content before invoking LM Studio;
@@ -81,9 +125,11 @@ modifying the source prompt artefact.
 
 ## Failure Behavior
 
-Generation throws `LmStudioProviderError` with user-facing messages when:
+Discovery and generation return or throw user-facing errors when:
 
 - LM Studio is not reachable.
+- No model is loaded, or multiple models require a configured choice.
+- Global provider configuration is invalid or selects an unsupported provider.
 - The configured endpoint returns a failed HTTP response.
 - The endpoint returns invalid JSON.
 - The response is missing choices, assistant message content, finish reason, or

@@ -6,7 +6,8 @@ import {
   type ExecutePromptRequest,
   type ExecutionProviderChoice,
 } from '../../ai/execution/executePrompt.js'
-import { createLmStudioProvider } from '../../ai/providers/lmStudioProvider.js'
+import type { LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
+import { resolveLocalModelProvider } from '../../ai/providers/resolveLocalProvider.js'
 import type { AiTaskType } from '../../ai/routing/modelRouting.js'
 
 const taskTypes = [
@@ -27,6 +28,8 @@ export interface ExecuteCommandOptions {
   projectRoot: string
   args: string[]
   localProvider?: AvailableLocalModelProvider
+  homeDir?: string
+  providerFetch?: LmStudioFetch
 }
 
 function parseRequiredValue(args: string[], index: number, flag: string): string {
@@ -142,10 +145,18 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
 
 export async function runExecuteCommand(options: ExecuteCommandOptions): Promise<void> {
   const request = parseExecuteArgs(options.args, options.projectRoot)
+  const modelProvider =
+    options.localProvider ??
+    (
+      await resolveLocalModelProvider({
+        ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
+        ...(options.providerFetch === undefined ? {} : { fetch: options.providerFetch }),
+      })
+    ).provider
   const result = await executePrompt({
     request,
     projectRoot: options.projectRoot,
-    modelProvider: options.localProvider ?? createLmStudioProvider(),
+    modelProvider,
   })
 
   console.log('Friday prompt executed with an explicit local provider.')
