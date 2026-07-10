@@ -14,9 +14,9 @@
   conflated with AI-provider output.
 - Friday must remain useful before model integrations exist. Local memory,
   structured prompts, evidence, and inspectable output are valuable on their own.
-- Routing, privacy classification, secret detection, provider contracts, and
-  advisory cost estimation have implemented domain layers. Do not claim real
-  provider execution, API-key loading, usage telemetry, budget enforcement, or
-  the `friday cost` CLI as implemented until those code paths exist.
+- Routing, privacy classification, secret detection, provider contracts, advisory
+  cost estimation, `friday cost`, and opt-in local evidence collection are
+  implemented. Do not claim real provider execution, API-key loading, usage
+  telemetry, or budget enforcement until those code paths exist.
 - Keep generated artefacts under `.friday/output/` distinct from the human-curated
   project memory files.

@@ -27,14 +27,15 @@ boundaries, and unnecessary cost.
 
 ## Current Stage
 
-Early CLI-first local workflow engine. Friday can initialise and inspect
-per-project memory, prepare local evidence files, build planning and review
-prompts from local context, preview model routes, classify prompt privacy, detect
-common secrets, estimate advisory usage cost in the domain layer, and define
-provider-agnostic model contracts.
+Friday v0.1.0 is an early CLI-first local workflow engine. Friday can initialise
+and inspect per-project memory, prepare and collect local evidence, build
+planning and review prompts from local context, preview model routes, classify
+prompt privacy, detect common secrets, estimate advisory usage cost through the
+`friday cost` CLI, print local AI policy summaries in `plan` and `review`, and
+define provider-agnostic model contracts.
 
 Friday still does not call real AI providers, load API keys, stream model output,
-log real provider usage, or expose a `friday cost` command.
+log real provider usage, enforce budgets, or publish telemetry.
 
 ## Core Goals
 
@@ -59,7 +60,7 @@ log real provider usage, or expose a `friday cost` command.
 - Runtime: Node.js
 - Language: TypeScript with native ES modules
 - CLI: local Node.js executable with `init`, `status`, `evidence`, `plan`,
-  `review`, and `route` commands
+  `review`, `route`, and `cost` commands
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`
@@ -70,11 +71,7 @@ log real provider usage, or expose a `friday cost` command.
   complexity?
 - How should privacy classification and secret detection combine before any hosted
   provider request is allowed?
-- How should `plan` and `review` compose privacy classification, route
-  recommendation, and cost estimates in a single command output?
-- What is the smallest useful `friday cost` command before real usage telemetry
-  exists?
-- Which deterministic evidence providers should be collected automatically first:
-  Git, TypeScript, tests, Fallow, or all four behind explicit flags?
+- What level of route and cost detail is useful in `plan` and `review` output
+  without making those workflows noisy?
 - Which local and hosted providers best support a provider-agnostic post-MVP
   integration?

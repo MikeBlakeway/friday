@@ -7,13 +7,24 @@
     "example": "examples",
     "test": "tests"
   },
+  "files": [
+    "dist",
+    "docs/*.md",
+    "docs/releases",
+    "examples",
+    "CONTRIBUTING.md",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "bin": {
     "friday": "./dist/cli/index.js"
   },
   "scripts": {
     "dev": "tsx src/cli/index.ts",
-    "build": "tsc",
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "start": "node dist/cli/index.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

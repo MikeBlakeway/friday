@@ -16,7 +16,7 @@ flowchart TD
 
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, route]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, evidence, plan, review, route, cost]
 
   CurrentProjectMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentEvidence --> EvidencePack[Current: evidence pack<br/>evidence-pack.json]
@@ -33,7 +33,8 @@ flowchart TD
   PromptBuilders --> LocalOutputs[Current: inspectable outputs<br/>.friday/output/*]
 
   PlannedGlobalMemory[Planned: global developer memory<br/>~/.friday/*] -.-> PromptBuilders
-  PlannedCollectors[Planned: automatic evidence collectors<br/>Git, TypeScript, tests, Fallow] -.-> CurrentEvidence
+  CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
+  CurrentCollectors --> CurrentEvidence
   Recommendation -.-> PlannedProviders[Planned: provider integrations<br/>local, OpenAI, Anthropic, DeepSeek]
   PlannedProviders -.-> PlannedUsage[Planned: usage logging<br/>and budget reporting]
   PlannedUsage -.-> CostModel
@@ -58,6 +59,8 @@ usage, or provide a cockpit UI.
   changed-file context, project memory, and manual evidence.
 - `friday route` previews the recommended model route without reading project
   files or calling a provider.
+- `friday cost` estimates advisory provider/model cost from estimated token
+  counts and built-in pricing.
 
 ## Core Modules
 
@@ -79,16 +82,20 @@ usage, or provide a cockpit UI.
 ## Current Data Flow
 
 `friday plan` and `friday review` are local prompt builders. They load project
-memory and evidence, format inspectable Markdown prompts, and write generated
-outputs under `.friday/output/`.
+memory and evidence, format inspectable Markdown prompts, write generated
+outputs under `.friday/output/`, and print a local AI policy summary with
+privacy, route, and advisory cost information.
 
 `friday evidence` is local and deterministic. It prepares provider files for
-manual or future collected evidence and normalises existing contents into an
-evidence pack.
+manual evidence, can collect Git, TypeScript, test, and Fallow evidence with
+`--collect`, and normalises existing contents into an evidence pack.
 
 `friday route` is pure policy. It accepts explicit task and privacy inputs, then
 prints a route recommendation, warnings, and alternatives. It does not execute
 the recommendation.
+
+`friday cost` is advisory. It accepts explicit provider, model, and estimated
+token counts, then prints deterministic input, output, and total cost estimates.
 
 ## Boundaries
 
@@ -102,10 +109,6 @@ the recommendation.
 
 ## Planned Architecture Work
 
-- Compose privacy classification, route recommendation, and cost estimates into
-  `plan` and `review` command output.
-- Add automatic deterministic evidence collection for Git, TypeScript, tests,
-  and Fallow.
 - Add usage logging and budget reporting.
 - Add real local and hosted provider implementations behind the provider
   contracts.

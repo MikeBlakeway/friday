@@ -39,18 +39,20 @@ provider.
 - Provider-neutral model interfaces and mock provider
 - Vitest, TypeScript, Prettier, Fallow, and build checks
 
-## MVP Work
+## MVP Release State
 
-1. Reconcile documentation and project memory with the current implemented state.
-2. Define the MVP explicitly as a no-provider local workflow engine.
-3. Integrate privacy classification, route recommendation, and advisory cost
-   estimates into `friday plan` and `friday review`.
-4. Collect deterministic local evidence from Git, TypeScript, tests, and Fallow.
+- Documentation and project memory are reconciled with the implemented
+  no-provider local workflow engine.
+- `friday evidence --collect` can gather deterministic local evidence from Git,
+  TypeScript, tests, and Fallow.
+- `friday cost` provides advisory estimates from built-in provider/model pricing
+  and estimated token counts.
+- `friday plan` and `friday review` generate provider-neutral prompts and print
+  local privacy, route, and advisory cost summaries for manual inspection before
+  any model handoff.
 
 ## Post-MVP Work
 
-- Add an example project that demonstrates Friday memory and generated output.
-- Add a simple architecture diagram that marks current and planned boundaries.
 - Global developer memory and reusable policy files
 - Usage logging and budget rules
 - Local model provider implementation

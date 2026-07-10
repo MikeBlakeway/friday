@@ -189,6 +189,32 @@ to control.
 
 ---
 
+## Installation
+
+Friday v0.1.0 is packaged as a Node.js CLI. For this MVP release, install from a
+GitHub release asset or a local package tarball rather than the npm registry:
+
+```bash
+npm install -g ./friday-0.1.0.tgz
+friday help
+```
+
+For local development from a checkout:
+
+```bash
+npm install
+npm run build
+npm link
+friday help
+```
+
+The CLI does not require API keys and does not call AI providers.
+
+See [Friday v0.1.0 release notes](./docs/releases/v0.1.0.md) for the release
+summary and validation scope.
+
+---
+
 ## Memory Structure
 
 Friday uses two types of memory.
@@ -352,10 +378,10 @@ Friday is a workflow layer for developers who want more control over AI-assisted
 
 Friday is currently an early CLI-first local workflow engine. It can initialise
 and inspect per-project memory, collect deterministic local evidence, build
-planning and review prompts from local context, preview model routes, classify
-privacy risk, detect common secrets, estimate advisory model costs in the domain
-layer, and define provider-agnostic model contracts. It still does not call real
-AI providers.
+planning and review prompts from local context, print privacy-aware route and
+cost summaries for those workflows, preview model routes, classify privacy risk,
+detect common secrets, estimate advisory model costs, and define
+provider-agnostic model contracts. It still does not call real AI providers.
 
 Implemented CLI commands:
 
@@ -407,7 +433,7 @@ The current MVP direction is a no-provider local workflow engine that can:
 4. classify request privacy and block secret-bearing context
 5. route a task to an appropriate model tier without executing it
 6. estimate advisory usage cost
-7. create inspectable planning, review, cost, and evidence artefacts
+7. create inspectable planning, review, cost, route, and evidence artefacts
 
 MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
 `friday review`, `friday route`, and `friday cost`. Post-MVP work includes
@@ -456,36 +482,36 @@ Future possibilities:
 - [x] Privacy classification
 - [x] Secret detection
 - [x] Advisory cost estimation domain model
-- [ ] Model pricing configuration files
+- [x] Built-in advisory model pricing
 - [ ] Usage logging
-- [ ] Cost reporting CLI
+- [x] Advisory cost estimation CLI
 
 ### Milestone 3 — Model Routing
 
 - [x] Provider interfaces
 - [x] Routing rules
 - [x] Route preview command
-- Local provider support
-- Hosted provider support
-- Escalation execution flow
+- [ ] Local provider support
+- [ ] Hosted provider support
+- [ ] Escalation execution flow
 
 ### Milestone 4 — Core Workflows
 
-- Brainstorm workflow
+- [ ] Brainstorm workflow
 - [x] Planning prompt workflow
-- Specification workflow
+- [ ] Specification workflow
 - [x] Code review prompt workflow
-- Cost reporting workflow
+- [x] Advisory cost estimation workflow
 - [x] Local evidence preparation workflow
 - [x] Opt-in deterministic evidence collection
 
 ### Milestone 5 — Portfolio Polish
 
-- Architecture documentation
-- Example project
-- Demo screenshots or GIF
-- Public roadmap
-- Usage examples
+- [x] Architecture documentation
+- [x] Example project
+- [ ] Demo screenshots or GIF
+- [x] Public roadmap
+- [x] Usage examples
 
 ---
 
@@ -547,7 +573,9 @@ Evidence sources include:
 - test runner output
 - manual developer evidence notes
 
-The intended direction is to treat evidence providers as structural project signals, separate from AI model providers.
+Evidence providers are structural project signals, separate from AI model
+providers. `friday evidence --collect` can run local Git, TypeScript, test, and
+Fallow commands and records failures as evidence instead of calling an AI model.
 
 ---
 
@@ -561,7 +589,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the branch naming convention and co
 
 ## License
 
-TBC.
+MIT. See [LICENSE](./LICENSE).
 
 ---
 

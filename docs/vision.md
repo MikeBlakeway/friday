@@ -15,9 +15,10 @@ Friday currently works as a local command-line tool. It can:
 - initialise `.friday/` project memory
 - inspect expected project-memory files
 - prepare local evidence-provider files and an evidence pack
-- build a planning prompt from project memory and manual evidence
+- build a planning prompt from project memory and manual evidence, with a local
+  privacy, route, and advisory cost summary
 - build a review prompt from local changed-file context, project memory, and
-  manual evidence
+  manual evidence, with a local privacy, route, and advisory cost summary
 - preview a model route from explicit task and policy inputs
 - classify prompt privacy and detect common secrets in pure TypeScript
 - estimate advisory model cost through the `friday cost` command
@@ -28,7 +29,7 @@ output, log real usage, or enforce budgets.
 
 ## MVP Direction
 
-The MVP should be a no-provider local workflow engine:
+Friday v0.1.0 is a no-provider local workflow engine:
 
 ```bash
 friday init
@@ -39,16 +40,15 @@ friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 ```
 
-The MVP should make it clear what local context was loaded, what evidence was
-used, what privacy level applies, which route would be recommended, and what the
-estimated cost would be before any future model call. It should write
-inspectable artifacts and should not require API keys, hosted provider
-configuration, provider network calls, usage telemetry, global developer memory,
-a cockpit UI, or autonomous coding.
+The MVP makes local project memory, deterministic evidence, route previews, and
+advisory cost estimates inspectable before any future model call. Planning and
+review workflows include local AI policy summaries while still leaving the
+provider handoff manual. Friday writes local artifacts and does not require API
+keys, hosted provider configuration, provider network calls, usage telemetry,
+global developer memory, a cockpit UI, or autonomous coding.
 
-The example project and architecture diagram should support demo and
-presentation work after the local workflow is coherent. They are not blockers
-for proving the local workflow engine itself.
+The example project and architecture diagram support public demo and
+presentation work around the local workflow.
 
 ## Product Principles
 
