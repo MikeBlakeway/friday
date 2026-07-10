@@ -7,7 +7,7 @@ Usage:
 Available commands:
   init     Initialize Friday project memory in the current project
   status   Show Friday project memory status
-  evidence Prepare local evidence files and an inspectable evidence pack
+  evidence Prepare local evidence files; use --collect to run deterministic providers
   plan     Create a planning prompt from local project memory
   review   Create a review prompt from local changed-file context
   route    Preview Friday's model route for a task without calling a provider

@@ -2,11 +2,11 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { FRIDAY_EVIDENCE_FILES } from '../../ai/evidence/evidenceFiles.js'
-import { runEvidenceCommand } from './evidence.js'
+import { parseEvidenceArgs, runEvidenceCommand } from './evidence.js'
 
 const tempDirs: string[] = []
 
@@ -86,5 +86,112 @@ Keep this existing note.`,
         severity: 'medium',
       },
     ])
+  })
+
+  it('collects deterministic local provider output into the evidence pack', async () => {
+    const projectRoot = await createTempProject()
+    await mkdir(path.join(projectRoot, FRIDAY_PROJECT_DIR))
+    const runCommand = vi.fn(async (command: string, args: string[]) => ({
+      command,
+      args,
+      exitCode: 0,
+      stdout: `${command} ${args.join(' ')} passed\n`,
+      stderr: '',
+    }))
+
+    await runEvidenceCommand({
+      projectRoot,
+      args: ['--collect'],
+      createdAt: '2026-07-07T12:00:00.000Z',
+      runCommand,
+    })
+
+    expect(runCommand).toHaveBeenCalledTimes(5)
+
+    const evidencePack = JSON.parse(
+      await readFile(
+        path.join(projectRoot, FRIDAY_PROJECT_DIR, 'evidence', 'evidence-pack.json'),
+        'utf8',
+      ),
+    )
+    expect(evidencePack.summaries).toHaveLength(4)
+    expect(evidencePack.summaries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'git',
+          content: expect.stringContaining('git status -sb passed'),
+        }),
+        expect.objectContaining({
+          source: 'typescript',
+          content: expect.stringContaining('Status: passed'),
+        }),
+      ]),
+    )
+  })
+
+  it('captures provider command failures without aborting collection', async () => {
+    const projectRoot = await createTempProject()
+    await mkdir(path.join(projectRoot, FRIDAY_PROJECT_DIR))
+
+    await runEvidenceCommand({
+      projectRoot,
+      args: ['--collect'],
+      createdAt: '2026-07-07T12:00:00.000Z',
+      runCommand: async (command, args) => ({
+        command,
+        args,
+        exitCode: command === 'npm' && args.includes('typecheck') ? 2 : 0,
+        stdout: '',
+        stderr: command === 'npm' && args.includes('typecheck') ? 'Type error\n' : '',
+      }),
+    })
+
+    const typeScriptSummary = await readFile(
+      path.join(projectRoot, FRIDAY_PROJECT_DIR, 'evidence', 'typescript-summary.md'),
+      'utf8',
+    )
+    expect(typeScriptSummary).toContain('Status: failed')
+    expect(typeScriptSummary).toContain('Exit code: 2')
+    expect(typeScriptSummary).toContain('Type error')
+  })
+
+  it('preserves user-authored provider summaries during collection', async () => {
+    const projectRoot = await createTempProject()
+    const evidenceDirPath = path.join(projectRoot, FRIDAY_PROJECT_DIR, 'evidence')
+    await mkdir(evidenceDirPath, { recursive: true })
+    await writeFile(
+      path.join(evidenceDirPath, 'git-summary.md'),
+      '# Git Evidence\n\nKeep this authored summary.\n',
+      'utf8',
+    )
+
+    await runEvidenceCommand({
+      projectRoot,
+      args: ['--collect'],
+      runCommand: async (command, args) => ({
+        command,
+        args,
+        exitCode: 0,
+        stdout: 'ok',
+        stderr: '',
+      }),
+    })
+
+    await expect(readFile(path.join(evidenceDirPath, 'git-summary.md'), 'utf8')).resolves.toBe(
+      '# Git Evidence\n\nKeep this authored summary.\n',
+    )
+  })
+})
+
+describe('parseEvidenceArgs', () => {
+  it('enables deterministic collection explicitly', () => {
+    expect(parseEvidenceArgs(['--collect'])).toEqual({ collect: true })
+    expect(parseEvidenceArgs([])).toEqual({ collect: false })
+  })
+
+  it('rejects unknown evidence options', () => {
+    expect(() => parseEvidenceArgs(['--overwrite'])).toThrow(
+      'Unknown evidence option: --overwrite.',
+    )
   })
 })

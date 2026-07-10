@@ -250,10 +250,9 @@ This memory describes the current project, its goals, architecture, design direc
 ### Local Evidence
 
 Use `friday evidence` after `friday init` to create local evidence provider files
-under `.friday/evidence/`. The command does not call AI providers and does not run
-Fallow, Git, TypeScript, or test commands for you. It prepares inspectable files where
-you can paste deterministic findings, then writes `.friday/evidence/evidence-pack.json`
-from the current local contents.
+under `.friday/evidence/`. Add `--collect` to explicitly run local Git, TypeScript,
+test, and Fallow commands and write their normalized output before generating
+`.friday/evidence/evidence-pack.json`. Neither mode calls an AI provider.
 
 Manual evidence lives in `.friday/evidence/manual.md` as markdown sections:
 
@@ -264,8 +263,9 @@ The auth callback path is not covered by the test suite.
 ```
 
 Provider summary files are reserved for local command output or human-written
-summaries from Fallow, Git, TypeScript, and test runners. Placeholder provider files
-are ignored until you replace them with real evidence.
+summaries from Fallow, Git, TypeScript, and test runners. Collection replaces only
+untouched placeholders; `manual.md` and edited provider summaries are preserved.
+Provider command failures are recorded as evidence rather than aborting the workflow.
 
 ---
 
@@ -351,7 +351,7 @@ Friday is a workflow layer for developers who want more control over AI-assisted
 ## Current Status
 
 Friday is currently an early CLI-first local workflow engine. It can initialise
-and inspect per-project memory, prepare deterministic evidence files, build
+and inspect per-project memory, collect deterministic local evidence, build
 planning and review prompts from local context, preview model routes, classify
 privacy risk, detect common secrets, estimate advisory model costs in the domain
 layer, and define provider-agnostic model contracts. It still does not call real
@@ -477,7 +477,7 @@ Future possibilities:
 - [x] Code review prompt workflow
 - Cost reporting workflow
 - [x] Local evidence preparation workflow
-- [ ] Automatic deterministic evidence collection
+- [x] Opt-in deterministic evidence collection
 
 ### Milestone 5 — Portfolio Polish
 
@@ -537,9 +537,9 @@ These report files are ignored by git so they can be regenerated locally without
 
 ## Deterministic Evidence Providers
 
-Friday will gather deterministic repo evidence before using AI reasoning in planning and review workflows.
+Friday gathers deterministic repo evidence before using AI reasoning in planning and review workflows.
 
-Planned evidence sources include:
+Evidence sources include:
 
 - Fallow static analysis
 - Git history and change metadata

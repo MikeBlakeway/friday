@@ -26,7 +26,7 @@ async function main(): Promise<void> {
       await runStatusCommand({ projectRoot })
       return
     case 'evidence':
-      await runEvidenceCommand({ projectRoot })
+      await runEvidenceCommand({ projectRoot, args: process.argv.slice(3) })
       return
     case 'plan':
       await runPlanCommand({
