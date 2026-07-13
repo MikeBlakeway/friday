@@ -26,6 +26,7 @@ yarn-error.log*
 reports/fallow/*.json
 
 # Friday generated output
+.friday/output/plan-prompt.md
 .friday/output/review-prompt.md
 .friday/evidence/
 .friday/runtime/
