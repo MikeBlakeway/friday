@@ -76,6 +76,8 @@ export interface ExecutionLogSummary {
   byWorkflow: Record<string, number>
   byProviderModel: Record<string, number>
   byResultStatus: Record<ExecutionResultStatus, number>
+  tokenUsage: ExecutionLogTokenUsage
+  advisoryCostByCurrency: Record<string, number>
   retried: number
   escalated: number
   developerOutcomes: Record<DeveloperOutcomeStatus, number>
@@ -245,6 +247,17 @@ function assertNestedRecord(
   return value
 }
 
+function assertAllowedString(
+  record: Record<string, unknown>,
+  fieldName: string,
+  allowed: readonly string[],
+  lineNumber: number,
+): void {
+  if (typeof record[fieldName] !== 'string' || !allowed.includes(record[fieldName])) {
+    throw new Error(`Malformed execution log record at line ${lineNumber}: invalid ${fieldName}.`)
+  }
+}
+
 function assertExecutionLogRecord(
   value: unknown,
   lineNumber: number,
@@ -258,14 +271,29 @@ function assertExecutionLogRecord(
   assertRequiredString(value, 'completedAt', lineNumber)
   assertRequiredNumber(value, 'latencyMs', lineNumber)
   assertRequiredString(assertNestedRecord(value, 'workflow', lineNumber), 'type', lineNumber)
-  assertRequiredNumber(assertNestedRecord(value, 'usage', lineNumber), 'totalTokens', lineNumber)
-  assertRequiredNumber(
-    assertNestedRecord(value, 'costEstimate', lineNumber),
-    'estimatedTotalCost',
+  const usage = assertNestedRecord(value, 'usage', lineNumber)
+  assertRequiredNumber(usage, 'inputTokens', lineNumber)
+  assertRequiredNumber(usage, 'outputTokens', lineNumber)
+  assertRequiredNumber(usage, 'totalTokens', lineNumber)
+  const costEstimate = assertNestedRecord(value, 'costEstimate', lineNumber)
+  assertRequiredString(costEstimate, 'currency', lineNumber)
+  assertRequiredNumber(costEstimate, 'estimatedTotalCost', lineNumber)
+  assertAllowedString(
+    assertNestedRecord(value, 'result', lineNumber),
+    'status',
+    ['succeeded', 'failed', 'blocked'],
     lineNumber,
   )
-  assertRequiredString(assertNestedRecord(value, 'result', lineNumber), 'status', lineNumber)
   assertRequiredString(assertNestedRecord(value, 'privacy', lineNumber), 'privacyLevel', lineNumber)
+
+  if (value.developerOutcome !== undefined) {
+    assertAllowedString(
+      assertNestedRecord(value, 'developerOutcome', lineNumber),
+      'status',
+      ['accepted', 'retried', 'escalated', 'rejected'],
+      lineNumber,
+    )
+  }
 }
 
 export async function appendExecutionLogRecord(
@@ -318,6 +346,12 @@ function createEmptySummary(): ExecutionLogSummary {
       failed: 0,
       blocked: 0,
     },
+    tokenUsage: {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+    },
+    advisoryCostByCurrency: {},
     retried: 0,
     escalated: 0,
     developerOutcomes: {
@@ -341,6 +375,12 @@ export function summariseExecutionLogRecords(records: ExecutionLogRecord[]): Exe
     increment(summary.byWorkflow, record.workflow.type)
     increment(summary.byProviderModel, `${record.provider}/${record.model}`)
     summary.byResultStatus[record.result.status] += 1
+    summary.tokenUsage.inputTokens += record.usage.inputTokens
+    summary.tokenUsage.outputTokens += record.usage.outputTokens
+    summary.tokenUsage.totalTokens += record.usage.totalTokens
+    summary.advisoryCostByCurrency[record.costEstimate.currency] =
+      (summary.advisoryCostByCurrency[record.costEstimate.currency] ?? 0) +
+      record.costEstimate.estimatedTotalCost
 
     if (record.developerOutcome?.status === 'retried') {
       summary.retried += 1

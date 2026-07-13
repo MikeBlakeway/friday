@@ -13,6 +13,7 @@ import { runReviewCommand } from './commands/review.js'
 import { runWorkflowCommand } from './commands/run.js'
 import { runRouteCommand } from './commands/route.js'
 import { runStatusCommand } from './commands/status.js'
+import { runUsageCommand } from './commands/usage.js'
 
 async function main(): Promise<void> {
   const command = process.argv[2]
@@ -47,6 +48,9 @@ async function main(): Promise<void> {
       return
     case 'cost':
       runCostCommand(process.argv.slice(3))
+      return
+    case 'usage':
+      await runUsageCommand({ projectRoot, args: process.argv.slice(3) })
       return
     case 'doctor': {
       const report = await runDoctorCommand({ projectRoot, args: process.argv.slice(3) })

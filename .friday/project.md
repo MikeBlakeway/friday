@@ -37,10 +37,11 @@ define provider-agnostic model contracts.
 Friday can discover, configure, diagnose, and execute planning and changed-file
 review workflows through a local LM Studio provider. It preserves prompt and
 result artefacts plus metadata-only usage history, supports reasoning-aware output
-allowances with one bounded retry, reports live workflow phases, and displays a
-redacted bounded assistant response. It still does not call hosted providers,
-load API keys, stream model output, enforce budgets, aggregate usage, or publish
-telemetry.
+allowances with one bounded retry, reports live workflow phases, displays a
+redacted bounded assistant response, and provides read-only per-project usage
+summaries with time filtering and workflow/model grouping. It still does not call
+hosted providers, load API keys, stream model output, enforce budgets, aggregate
+usage across projects, or publish telemetry.
 
 ## Core Goals
 
@@ -66,7 +67,7 @@ telemetry.
 - Language: TypeScript with native ES modules
 - CLI: local Node.js executable with `init`, `global init`, `status`, `doctor`,
   `local setup`, `evidence`, `plan`, `review`, `run`, `execute`, `route`, and
-  `cost` commands
+  `cost`, and `usage` commands
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`

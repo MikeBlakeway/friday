@@ -144,6 +144,25 @@ describe('execution log', () => {
     )
   })
 
+  it('rejects malformed summary fields with line-specific errors', async () => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const malformedRecord = {
+      ...createRecord(),
+      usage: {
+        outputTokens: 20,
+        totalTokens: 30,
+      },
+    }
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(logPath, `${JSON.stringify(malformedRecord)}\n`, 'utf8')
+
+    await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
+      'Malformed execution log record at line 1: missing required fields.',
+    )
+  })
+
   it('drops raw prompts, secret values, and non-schema fields before writing', async () => {
     const projectRoot = await createTempProject()
     const record = {
@@ -229,6 +248,14 @@ describe('execution log', () => {
         succeeded: 1,
         failed: 1,
         blocked: 1,
+      },
+      tokenUsage: {
+        inputTokens: 30,
+        outputTokens: 60,
+        totalTokens: 90,
+      },
+      advisoryCostByCurrency: {
+        USD: 0,
       },
       retried: 1,
       escalated: 1,

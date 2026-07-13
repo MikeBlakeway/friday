@@ -170,6 +170,7 @@ friday plan "<goal>"
 friday review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
+friday usage --since 7d
 friday execute .friday/output/plan-prompt.md --provider local
 ```
 
@@ -224,9 +225,9 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] `friday cost` CLI command
 - [x] Metadata-only local token usage logging
 - [x] Advisory cost estimates recorded from real local usage
-- [ ] Aggregate usage reporting (post-MVP)
-- [ ] Cost report by task (post-MVP)
-- [ ] Cost report by provider/model (post-MVP)
+- [x] Read-only local usage summaries by workflow and provider/model
+- [ ] Cross-project aggregate usage reporting (post-MVP)
+- [ ] Richer cost reports (post-MVP)
 - [ ] Budget rules (post-MVP)
 
 ### Developer Workflows
@@ -241,6 +242,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] `friday run plan` and `friday run review --changed`
 - [x] `friday route`
 - [x] `friday cost`
+- [x] `friday usage`
 - [x] `friday execute`
 - [ ] `friday escalate` (post-MVP)
 
@@ -599,7 +601,9 @@ cost summaries for those workflows, preview model routes, classify privacy risk,
 detect common secrets, estimate advisory model costs, and define
 provider-agnostic model contracts. It can prepare and execute plan and changed-file
 review workflows through a configured local LM Studio provider, preserving prompt
-and result artefacts plus metadata-only usage history. Reasoning-capable models
+and result artefacts plus metadata-only usage history. `friday usage` summarises
+recorded tokens, advisory cost, outcomes, workflows, and provider/models without
+displaying prompt or response content. Reasoning-capable models
 use workflow-specific output allowances and at most one bounded, context-safe
 retry, while live phase feedback and the redacted assistant response remain
 visible in the CLI. Friday does not call hosted AI providers.
@@ -618,6 +622,7 @@ Implemented CLI commands:
 - `friday run review --changed [--yes] [--provider lm-studio] [--model <id>] [--display-max-lines <n>] [--display-max-chars <n>]`
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
+- `friday usage [--since <duration|date>] [--group-by workflow|model]`
 - `friday execute <prompt-path> --provider local [--display-max-lines <n>] [--display-max-chars <n>]`
 
 Planned CLI commands include `friday brainstorm`, `friday spec`, `friday design`,
@@ -633,9 +638,11 @@ cost estimation domain layer. It combines configured per-million input and
 output token prices with estimated token counts to produce deterministic
 advisory estimates. These estimates are not billing records and should be
 treated as planning guidance rather than billing records. Local execution writes
-real token usage and advisory estimates to metadata-only project history. Aggregate
-usage reporting, cost reports, and budget enforcement remain planned; Friday does
-not publish telemetry.
+real token usage and advisory estimates to metadata-only project history.
+`friday usage` reads that local history and reports deterministic totals with
+optional time filtering and grouping. Local-model financial cost may be zero;
+cross-project reporting, richer cost reports, and budget enforcement remain
+planned, and Friday does not publish telemetry.
 
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,
@@ -714,6 +721,7 @@ Future possibilities:
 - [x] Advisory cost estimation domain model
 - [x] Built-in advisory model pricing
 - [x] Local metadata-only usage logging
+- [x] Read-only local usage summary command
 - [x] Advisory cost estimation CLI
 
 ### Milestone 3 — Model Routing

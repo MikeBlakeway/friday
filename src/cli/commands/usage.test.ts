@@ -1,0 +1,221 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  appendExecutionLogRecord,
+  createExecutionLogRecord,
+  type ExecutionLogRecord,
+} from '../../ai/usage/executionLog.js'
+import type { AiRoute } from '../../ai/routing/modelRouting.js'
+import { runUsageCommand } from './usage.js'
+
+const tempDirs: string[] = []
+
+const localRoute: AiRoute = {
+  decision: 'use-local',
+  provider: 'local',
+  modelTier: 'local',
+  model: 'local-coder',
+  reason: 'Hosted models are disabled.',
+  requiresApproval: false,
+  blocked: false,
+}
+
+async function createTempProject(): Promise<string> {
+  const projectRoot = await mkdtemp(path.join(os.tmpdir(), 'friday-usage-command-'))
+  tempDirs.push(projectRoot)
+  return projectRoot
+}
+
+function createRecord(overrides: Partial<ExecutionLogRecord> = {}): ExecutionLogRecord {
+  return createExecutionLogRecord({
+    id: 'exec-1',
+    workflow: { type: 'plan' },
+    recommendedRoute: localRoute,
+    chosenRoute: localRoute,
+    provider: 'lm-studio',
+    model: 'local-coder',
+    startedAt: '2026-07-12T10:00:00.000Z',
+    completedAt: '2026-07-12T10:00:01.000Z',
+    latencyMs: 1_000,
+    usage: {
+      inputTokens: 100,
+      outputTokens: 25,
+      totalTokens: 125,
+    },
+    costEstimate: {
+      provider: 'lm-studio',
+      model: 'local-coder',
+      currency: 'USD',
+      estimatedInputTokens: 100,
+      estimatedOutputTokens: 25,
+      estimatedTotalTokens: 125,
+      estimatedTotalCost: 0,
+      advisory: true,
+      basis: 'estimated-token-counts',
+    },
+    result: { status: 'succeeded' },
+    privacy: {
+      privacyLevel: 'internal',
+      blocked: false,
+      secretDetected: false,
+    },
+    ...overrides,
+  })
+}
+
+async function captureUsageOutput(options: {
+  projectRoot: string
+  args?: string[]
+  now?: Date
+}): Promise<string> {
+  const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+
+  try {
+    await runUsageCommand({
+      projectRoot: options.projectRoot,
+      args: options.args ?? [],
+      ...(options.now === undefined ? {} : { now: options.now }),
+    })
+    return log.mock.calls.map((call) => call.join(' ')).join('\n')
+  } finally {
+    log.mockRestore()
+  }
+}
+
+afterEach(async () => {
+  vi.restoreAllMocks()
+  await Promise.all(tempDirs.map((dirPath) => rm(dirPath, { recursive: true, force: true })))
+  tempDirs.length = 0
+})
+
+describe('runUsageCommand', () => {
+  it('prints a clear empty state when no execution log exists', async () => {
+    const projectRoot = await createTempProject()
+
+    await expect(captureUsageOutput({ projectRoot })).resolves.toContain(
+      'No local execution history found.',
+    )
+  })
+
+  it('summarises successful, failed, and retried attempts using recorded token usage', async () => {
+    const projectRoot = await createTempProject()
+
+    await appendExecutionLogRecord(projectRoot, createRecord())
+    await appendExecutionLogRecord(
+      projectRoot,
+      createRecord({
+        id: 'exec-2',
+        workflow: { type: 'review' },
+        provider: 'anthropic',
+        model: 'claude-opus',
+        usage: {
+          inputTokens: 200,
+          outputTokens: 50,
+          totalTokens: 250,
+        },
+        costEstimate: {
+          ...createRecord().costEstimate,
+          provider: 'anthropic',
+          model: 'claude-opus',
+          estimatedTotalCost: 0.125,
+        },
+        result: { status: 'failed', errorCode: 'provider-error' },
+        developerOutcome: {
+          status: 'retried',
+          note: 'PRIVATE-SNIPPET-that-must-not-be-displayed',
+        },
+      }),
+    )
+
+    const output = await captureUsageOutput({ projectRoot })
+
+    expect(output).toContain('Execution records: 2')
+    expect(output).toContain('Successful attempts: 1')
+    expect(output).toContain('Failed attempts: 1')
+    expect(output).toContain('Recorded input tokens: 300')
+    expect(output).toContain('Recorded output tokens: 75')
+    expect(output).toContain('Recorded total tokens: 375')
+    expect(output).toContain('Advisory total cost: 0.125000 USD')
+    expect(output).toContain('Retries: 1')
+    expect(output).toContain('By workflow:\n  plan: 1\n  review: 1')
+    expect(output).toContain('By provider/model:')
+    expect(output).toContain('  anthropic/claude-opus: 1')
+    expect(output).not.toContain('provider-error')
+    expect(output).not.toContain('PRIVATE-SNIPPET')
+  })
+
+  it('filters history by duration using completion timestamps', async () => {
+    const projectRoot = await createTempProject()
+    const now = new Date('2026-07-13T12:00:00.000Z')
+
+    await appendExecutionLogRecord(
+      projectRoot,
+      createRecord({ id: 'old', completedAt: '2026-07-11T12:00:00.000Z' }),
+    )
+    await appendExecutionLogRecord(
+      projectRoot,
+      createRecord({ id: 'recent', completedAt: '2026-07-13T11:00:00.000Z' }),
+    )
+
+    const output = await captureUsageOutput({ projectRoot, args: ['--since', '24h'], now })
+
+    expect(output).toContain('Since: 2026-07-12T12:00:00.000Z')
+    expect(output).toContain('Execution records: 1')
+    expect(output).toContain('Recorded total tokens: 125')
+  })
+
+  it('supports ISO dates and validates invalid time filters', async () => {
+    const projectRoot = await createTempProject()
+
+    await appendExecutionLogRecord(projectRoot, createRecord())
+
+    await expect(
+      captureUsageOutput({ projectRoot, args: ['--since', '2026-07-12'] }),
+    ).resolves.toContain('Execution records: 1')
+    await expect(
+      runUsageCommand({ projectRoot, args: ['--since', 'yesterday-ish'] }),
+    ).rejects.toThrow('Invalid --since value')
+  })
+
+  it('limits grouping output to the requested workflow or model dimension', async () => {
+    const projectRoot = await createTempProject()
+    await appendExecutionLogRecord(projectRoot, createRecord())
+
+    const workflowOutput = await captureUsageOutput({
+      projectRoot,
+      args: ['--group-by', 'workflow'],
+    })
+    const modelOutput = await captureUsageOutput({
+      projectRoot,
+      args: ['--group-by', 'model'],
+    })
+
+    expect(workflowOutput).toContain('By workflow:')
+    expect(workflowOutput).not.toContain('By provider/model:')
+    expect(modelOutput).toContain('By provider/model:')
+    expect(modelOutput).not.toContain('By workflow:')
+    await expect(
+      runUsageCommand({ projectRoot, args: ['--group-by', 'provider'] }),
+    ).rejects.toThrow('--group-by must be "workflow" or "model".')
+  })
+
+  it('preserves line-specific errors for malformed history', async () => {
+    const projectRoot = await createTempProject()
+    await appendExecutionLogRecord(projectRoot, createRecord())
+
+    const { appendFile } = await import('node:fs/promises')
+    await appendFile(
+      path.join(projectRoot, '.friday/runtime/execution-log.jsonl'),
+      'not-json\n',
+      'utf8',
+    )
+
+    await expect(runUsageCommand({ projectRoot, args: [] })).rejects.toThrow(
+      'Malformed execution log record at line 2: invalid JSON.',
+    )
+  })
+})
