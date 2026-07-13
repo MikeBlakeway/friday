@@ -27,6 +27,9 @@ reports/fallow/*.json
 
 # Friday generated output
 .friday/output/review-prompt.md
+.friday/evidence/
+.friday/runtime/
+.friday/output/executions/
 
 # OS
 Thumbs.db
