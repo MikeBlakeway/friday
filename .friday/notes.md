@@ -19,6 +19,11 @@
   cost estimation, `friday cost`, and opt-in local evidence collection are
   implemented, alongside LM Studio setup, diagnostics, local execution, and
   metadata-only usage logging. Do not claim hosted-provider execution, API-key
-  loading, published telemetry, or budget enforcement until those paths exist.
-- Keep generated artefacts under `.friday/output/` distinct from the human-curated
-  project memory files.
+  loading, published telemetry, aggregate usage reporting, cost reports, or budget
+  enforcement until those paths exist.
+- Keep generated artefacts under `.friday/output/`, `.friday/evidence/`, and
+  `.friday/runtime/` distinct from human-curated project memory. Ignore live run
+  output and commit only deliberately curated, redacted `*.example.md` artefacts.
+- Capability-changing pull requests should update public documentation and this
+  dogfooded project memory together so future Friday prompts receive current
+  implementation-state claims.

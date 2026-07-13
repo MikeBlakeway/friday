@@ -36,8 +36,10 @@ define provider-agnostic model contracts.
 
 Friday can discover, configure, diagnose, and execute planning and changed-file
 review workflows through a local LM Studio provider. It preserves prompt and
-result artefacts plus metadata-only usage history. It still does not call hosted
-providers, load API keys, stream model output, enforce budgets, or publish
+result artefacts plus metadata-only usage history, supports reasoning-aware output
+allowances with one bounded retry, reports live workflow phases, and displays a
+redacted bounded assistant response. It still does not call hosted providers,
+load API keys, stream model output, enforce budgets, aggregate usage, or publish
 telemetry.
 
 ## Core Goals
@@ -45,7 +47,7 @@ telemetry.
 - Keep project context under developer control in local, readable Markdown files.
 - Make planning and later workflows repeatable instead of chat-session dependent.
 - Gather deterministic evidence before asking an LLM to reason about a project.
-- Route future tasks to the cheapest safe model, escalating only when justified.
+- Route tasks to the cheapest safe model, escalating only when justified.
 - Protect sensitive context and prevent secrets from reaching hosted models.
 - Maintain a strongly typed, practical TypeScript codebase with small incremental
   delivery.
@@ -77,5 +79,5 @@ telemetry.
   provider request is allowed?
 - What level of route and cost detail is useful in `plan` and `review` output
   without making those workflows noisy?
-- Which local and hosted providers best support a provider-agnostic post-MVP
-  integration?
+- Which hosted providers best support a provider-agnostic post-MVP integration
+  without weakening the current privacy and approval boundaries?

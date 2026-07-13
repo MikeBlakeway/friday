@@ -55,7 +55,7 @@ describe('estimateAiUsageCost', () => {
     expect(estimate.estimatedTotalCost).toBe(0.05)
   })
 
-  it('keeps estimates explicitly advisory until telemetry exists', () => {
+  it('distinguishes advisory estimates from local usage history and planned reporting', () => {
     const estimate = estimateAiUsageCost({
       pricing: createPricing(),
       usage: {
@@ -66,7 +66,8 @@ describe('estimateAiUsageCost', () => {
 
     expect(estimate.advisory).toBe(true)
     expect(estimate.warning).toContain('advisory')
-    expect(estimate.warning).toContain('real usage telemetry')
+    expect(estimate.warning).toContain('local execution records actual token usage separately')
+    expect(estimate.warning).toContain('aggregate reporting and budget enforcement remain planned')
   })
 
   it('rejects negative or fractional estimated token counts', () => {

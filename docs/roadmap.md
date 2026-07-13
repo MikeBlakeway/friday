@@ -47,6 +47,8 @@ writes a result artefact and metadata-only usage record.
 - Local-provider diagnostics and opt-in test generation
 - One-command local plan and changed-file review execution
 - Local result artefacts and metadata-only usage history
+- Reasoning-aware workflow output allowances and one bounded context-safe retry
+- Live TTY-aware workflow progress and redacted assistant-response display
 - Vitest, TypeScript, Prettier, Fallow, and build checks
 
 ## MVP Release State
@@ -62,10 +64,12 @@ writes a result artefact and metadata-only usage record.
   any model handoff.
 - `friday local setup`, `friday doctor`, and `friday run` provide the guided path
   from model selection to an approved local result.
+- Local execution writes metadata-only usage records for successful and failed
+  attempts. Aggregate usage reporting and budget enforcement remain planned.
 
 ## Post-MVP Work
 
-- Budget rules and aggregate usage reporting
+- Aggregate usage reporting, cost reports, and budget enforcement
 - Hosted provider implementations
 - Explicit premium escalation and approval flow
 - Brainstorm, spec, design, refactor, and ship workflows

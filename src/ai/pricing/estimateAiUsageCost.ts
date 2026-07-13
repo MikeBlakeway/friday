@@ -2,7 +2,7 @@ import type { AiUsageCostEstimate, EstimateAiUsageCostInput } from './pricingMod
 
 const TOKENS_PER_PRICING_UNIT = 1_000_000
 const ADVISORY_WARNING =
-  'Cost estimates are advisory and based on estimated token counts until real usage telemetry exists.'
+  'Cost estimates are advisory and based on estimated token counts; local execution records actual token usage separately, while aggregate reporting and budget enforcement remain planned.'
 
 function assertNonNegativeInteger(value: number, fieldName: string): void {
   if (!Number.isInteger(value) || value < 0) {

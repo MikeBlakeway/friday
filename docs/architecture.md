@@ -5,8 +5,9 @@ project memory, deterministic evidence, prompt construction, privacy policy,
 model routing, cost estimation, provider contracts, and command handling.
 
 That separation is intentional: the current app can produce useful local
-artefacts without provider execution, while future model calls can be added
-behind the existing safety and routing boundaries.
+artefacts without provider execution and can explicitly invoke a configured
+localhost LM Studio model behind the same safety and routing boundaries. Hosted
+model calls remain a future extension.
 
 ## Architecture Diagram
 
@@ -44,12 +45,14 @@ flowchart TD
   GlobalProviderConfig --> CurrentLocalProvider
   ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
+  ExecutionOutputs --> CurrentUsage[Current: metadata-only usage history<br/>.friday/runtime/execution-log.jsonl]
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
   Recommendation -.-> PlannedProviders[Planned: hosted provider integrations<br/>OpenAI, Anthropic, DeepSeek]
-  PlannedProviders -.-> PlannedUsage[Planned: usage logging<br/>and budget reporting]
-  PlannedUsage -.-> CostModel
+  CurrentUsage -.-> PlannedReporting[Planned: aggregate usage reporting<br/>cost reports and budget enforcement]
+  PlannedProviders -.-> PlannedReporting
+  PlannedReporting -.-> CostModel
   PlannedCockpit[Planned: richer cockpit UI] -.-> CLI
 ```
 
@@ -65,6 +68,7 @@ cockpit UI. Local execution metadata can be appended under
 provider layer includes optional machine-level configuration, localhost
 discovery, deterministic loaded-model selection, and an LM Studio adapter behind
 the same routing and privacy boundaries.
+Hosted-provider execution remains planned and outside the current product.
 
 ## Implemented Commands
 
@@ -167,7 +171,11 @@ artefact, re-runs privacy and secret classification, routes with hosted models
 disabled, requires `--provider local`, loads optional configuration from
 `~/.friday/providers.json`, discovers LM Studio at common localhost endpoints,
 selects a loaded model, and writes a separate execution result under
-`.friday/output/executions/`.
+`.friday/output/executions/`. Successful and failed attempts append metadata-only
+records to `.friday/runtime/execution-log.jsonl`; raw prompts, secrets, hidden
+reasoning, and unredacted provider responses are excluded from that history.
+Workflow-specific output-token defaults leave room for reasoning models, and an
+implicit ceiling may trigger one bounded retry within known context limits.
 
 `friday local setup` is the machine-configuration boundary. It validates local
 endpoint settings, discovers loaded LM Studio models, resolves one model through
@@ -182,10 +190,13 @@ interactive confirmation or an explicit `--start-server` flag.
 - Global provider configuration is optional machine state and is never merged
   into project memory or prompt context.
 - Project memory is human-maintained source context.
-- Generated prompts and evidence packs are derived artefacts.
+- Generated prompts, execution results, evidence packs, and runtime logs are
+  derived local artefacts. Live generated files are ignored by default; curated,
+  redacted `*.example.md` artefacts may be committed as documentation.
 - Evidence providers are deterministic sources of facts, not AI providers.
-- Routing and cost estimation remain advisory around execution and until usage
-  logging exists.
+- Routing and cost estimation remain advisory around execution. Metadata-only
+  local usage logging exists, but aggregate usage reporting and budget enforcement
+  do not.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
 - LM Studio execution is optional and local-only. It is available through the
@@ -195,5 +206,6 @@ interactive confirmation or an explicit `--start-server` flag.
 
 ## Planned Architecture Work
 
-- Add usage logging and budget reporting.
+- Add aggregate usage reporting, cost reports, and budget enforcement on top of
+  implemented metadata-only local execution history.
 - Add hosted provider implementations behind the provider contracts.

@@ -42,6 +42,8 @@ must remain practical, specific, and professional.
 
 ### 2026-06-26 — Separate global and project memory conceptually; begin with project memory
 
+**Status: Superseded on 2026-07-13 by optional global developer memory.**
+
 **Context**
 
 Friday needs reusable developer preferences and repository-specific context, but
@@ -105,6 +107,8 @@ interface.
 
 ### 2026-06-26 — Keep first workflows local-first and provider-agnostic
 
+**Status: Superseded on 2026-07-13 for local execution; hosted execution remains deferred.**
+
 **Context**
 
 Provider-specific integrations would create lock-in and force privacy and billing
@@ -128,6 +132,8 @@ are introduced.
 
 ### 2026-06-26 — Treat Fallow as an evidence provider, not an AI provider
 
+**Status: Implemented and extended to Git, TypeScript, and test collection.**
+
 **Context**
 
 Static-analysis output can inform planning and review, but it does not generate
@@ -149,6 +155,8 @@ Friday must define normalised evidence formats and collection workflows before
 Fallow output can be consumed automatically.
 
 ### 2026-06-26 — Implement `friday plan` as a prompt and context builder first
+
+**Status: Retained for preparation and extended by explicit local execution.**
 
 **Context**
 
@@ -192,6 +200,8 @@ routing.
 The early product remains intentionally narrow and command-line oriented.
 
 ### 2026-06-26 — Build model routing as a pure policy layer before provider integrations
+
+**Status: Retained as policy and extended by guarded local execution.**
 
 **Context**
 
@@ -237,6 +247,8 @@ introducing a second policy model.
 
 ### 2026-07-07 — Compose privacy classification before route recommendation
 
+**Status: Retained and enforced by the local execution preflight.**
+
 **Context**
 
 Friday now has both a deterministic privacy classifier and a provider-neutral
@@ -259,3 +271,150 @@ produce a hosted route and sensitive context defaults local.
 The composed route remains recommendation-only until provider interfaces exist.
 That keeps the boundary deterministic and testable while still giving future
 callers a single policy entrypoint.
+
+### 2026-07-13 — Permit explicit local LM Studio execution
+
+**Context**
+
+Friday's inspectable prompt workflows, privacy classification, route policy, and
+provider-neutral contracts now provide the gates needed for deliberate local
+model use.
+
+**Decision**
+
+Support plan and changed-file review execution through a configured localhost LM
+Studio provider. Keep prompt preparation useful without a model, preserve prompt
+and result artefacts, re-run safety policy before invocation, and require explicit
+interactive approval or `--yes`. Hosted-provider execution remains out of scope.
+
+**Reasoning**
+
+This closes the local planning loop without introducing credentials, hosted data
+transfer, or an opaque automation path.
+
+**Trade-offs**
+
+Users must run LM Studio and load a compatible model. Friday does not download
+models, silently start provider processes, or support hosted fallbacks.
+
+### 2026-07-13 — Store provider configuration at machine level
+
+**Context**
+
+Local endpoints, loaded model identifiers, and context limits describe a machine,
+not a repository or a developer's prompt memory.
+
+**Decision**
+
+Store validated local provider settings in `~/.friday/providers.json`. Keep the
+file outside project memory, never include it in prompts, restrict endpoints to
+localhost HTTP, reject credential-like arbitrary fields, and require explicit
+consent before any server-start action.
+
+**Reasoning**
+
+One inspectable machine-level configuration can be reused across repositories
+without committing machine state or conflating configuration with model context.
+
+**Trade-offs**
+
+Repository checkouts are not self-contained for execution and each machine needs
+its own setup.
+
+### 2026-07-13 — Load optional global developer memory
+
+**Context**
+
+The project-memory-only foundation proved the local file format, but reusable
+developer preferences and policy should not be copied into every repository.
+
+**Decision**
+
+Load optional Markdown memory from `~/.friday/` before project memory. Provide
+`friday global init` as a previewed, confirmation-gated, non-overwriting setup;
+deduplicate exact content and let global privacy policy set a floor that project
+memory cannot weaken.
+
+**Reasoning**
+
+This adds reusable context while preserving readable files, explicit setup, and a
+clear separation between developer policy and repository facts.
+
+**Trade-offs**
+
+Prompt inputs can now depend on files outside the repository, so Friday reports
+which global files were loaded or missing.
+
+### 2026-07-13 — Record metadata-only local usage and outcomes
+
+**Context**
+
+Advisory estimates alone cannot show how an actual local execution behaved, but
+full prompt or response logging would duplicate sensitive project context.
+
+**Decision**
+
+Append local success and failure metadata to
+`.friday/runtime/execution-log.jsonl`, including workflow, route, provider/model,
+timing, token usage, advisory cost, stop reason, error code, privacy classification,
+and optional developer outcome. Exclude raw prompts, secrets, hidden reasoning,
+and unredacted provider responses.
+
+**Reasoning**
+
+Metadata supports inspectable routing and outcome history without turning Friday
+into published telemetry or a prompt replay store.
+
+**Trade-offs**
+
+The log is project-local and intentionally incomplete. Aggregate usage reporting,
+cross-project cost reports, and budget enforcement remain planned.
+
+### 2026-07-13 — Use reasoning-aware allowances and one bounded adaptive retry
+
+**Context**
+
+Reasoning-capable local models can consume an output allowance before producing a
+final answer, and generic low defaults caused valid Friday-on-Friday runs to end at
+the token limit.
+
+**Decision**
+
+Use shared workflow defaults of 4,000 output tokens for plan, 3,000 for review,
+and 2,000 for other explicit tasks. Respect explicit `--max-output-tokens`
+ceilings. When an implicit allowance ends with `output-limit-exhausted`, permit at
+most one bounded adaptive retry within known model and context limits.
+
+**Reasoning**
+
+The policy gives supported reasoning models room to finish while keeping token
+use visible, predictable, and bounded.
+
+**Trade-offs**
+
+Implicit runs may make a second local request. Explicit ceilings disable retry,
+and unknown or insufficient context limits fail without silently expanding use.
+
+### 2026-07-13 — Keep live generated output local
+
+**Context**
+
+Friday's own successful workflow created prompts, execution results, evidence, and
+runtime history containing machine- and run-specific context. The repository also
+uses curated prompt examples as durable product documentation.
+
+**Decision**
+
+Ignore live `.friday/output/plan-prompt.md`,
+`.friday/output/review-prompt.md`, `.friday/output/executions/`,
+`.friday/evidence/`, and `.friday/runtime/`. Commit only deliberately curated and
+redacted `*.example.md` artefacts when they add documentation value.
+
+**Reasoning**
+
+This keeps human-maintained memory reviewable and prevents transient or sensitive
+run data from entering version control while retaining safe examples.
+
+**Trade-offs**
+
+Real execution history is local to each checkout and is not reproduced from Git.

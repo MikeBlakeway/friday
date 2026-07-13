@@ -92,7 +92,7 @@ describe('formatCostEstimate', () => {
       advisory: true,
       basis: 'estimated-token-counts',
       warning:
-        'Cost estimates are advisory and based on estimated token counts until real usage telemetry exists.',
+        'Cost estimates are advisory and based on estimated token counts; local execution records actual token usage separately, while aggregate reporting and budget enforcement remain planned.',
     })
 
     expect(output).toBe(`Friday cost estimate
@@ -106,6 +106,6 @@ Estimated input cost: 0.000150 USD
 Estimated output cost: 0.001200 USD
 Estimated total cost: 0.001350 USD
 Basis: estimated-token-counts
-Warning: Cost estimates are advisory and based on estimated token counts until real usage telemetry exists.`)
+Warning: Cost estimates are advisory and based on estimated token counts; local execution records actual token usage separately, while aggregate reporting and budget enforcement remain planned.`)
   })
 })
