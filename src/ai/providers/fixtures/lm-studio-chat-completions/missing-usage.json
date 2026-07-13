@@ -1,0 +1,15 @@
+{
+  "id": "chatcmpl-missing-usage",
+  "object": "chat.completion",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The final answer is still usable."
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}
