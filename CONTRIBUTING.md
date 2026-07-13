@@ -15,6 +15,11 @@ Normal contribution flow:
 5. Open a pull request for meaningful changes.
 6. Merge only when checks pass.
 
+Capability-changing pull requests should update the relevant public documentation
+and dogfooded `.friday/` project memory in the same change. Keep implemented and
+planned behavior explicit, preserve superseded decisions as history, and do not
+commit live execution output or machine-specific runtime history.
+
 Tiny documentation or wording updates may be made directly when appropriate, but feature work should use branches.
 
 ## Branch Naming

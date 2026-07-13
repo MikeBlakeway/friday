@@ -25,7 +25,7 @@ yarn-error.log*
 # Analysis reports
 reports/fallow/*.json
 
-# Friday generated output
+# Friday live generated output (curated *.example.md files remain versioned)
 .friday/output/plan-prompt.md
 .friday/output/review-prompt.md
 .friday/evidence/

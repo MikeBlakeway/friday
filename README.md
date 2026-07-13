@@ -154,7 +154,7 @@ Friday is designed to support experienced developers, not hide engineering decis
 Friday's MVP is a local workflow engine with an explicit boundary between
 deterministic preparation and optional local model execution. It should prove the
 developer-owned workflow before adding hosted provider execution, API keys,
-usage telemetry, cockpit UI, or autonomous coding.
+published telemetry, cockpit UI, or autonomous coding.
 
 The MVP-critical command path is:
 
@@ -222,8 +222,9 @@ Friday is currently in early development. The initial focus is on the core engin
 
 - [x] Advisory cost estimation domain model
 - [x] `friday cost` CLI command
-- [ ] Token usage logging (post-MVP)
-- [ ] Estimated cost tracking from real usage (post-MVP)
+- [x] Metadata-only local token usage logging
+- [x] Advisory cost estimates recorded from real local usage
+- [ ] Aggregate usage reporting (post-MVP)
 - [ ] Cost report by task (post-MVP)
 - [ ] Cost report by provider/model (post-MVP)
 - [ ] Budget rules (post-MVP)
@@ -482,6 +483,14 @@ repo/.friday/
 
 This memory describes the current project, its goals, architecture, design direction, decisions, and active tasks. Project memory is repository-scoped and should not contain reusable personal preferences that belong in `~/.friday/`.
 
+Generated runtime files are local working data, not project memory. Repositories
+should normally ignore live `.friday/output/plan-prompt.md`,
+`.friday/output/review-prompt.md`, `.friday/output/executions/`,
+`.friday/runtime/`, and collected `.friday/evidence/`. Curated, redacted examples
+such as `.friday/output/plan-prompt.example.md` may be committed deliberately when
+they document the product without exposing prompts, secrets, or machine-specific
+history. Friday's own repository follows this policy in `.gitignore`.
+
 ### Local Evidence
 
 Use `friday evidence` after `friday init` to create local evidence provider files
@@ -584,14 +593,16 @@ Friday is a workflow layer for developers who want more control over AI-assisted
 ## Current Status
 
 Friday is currently an early CLI-first local workflow engine. It can initialise
-and inspect per-project memory, collect deterministic local evidence, build
+and inspect optional global and per-project memory, collect deterministic local evidence, build
 planning and review prompts from local context, print privacy-aware route and
 cost summaries for those workflows, preview model routes, classify privacy risk,
 detect common secrets, estimate advisory model costs, and define
 provider-agnostic model contracts. It can prepare and execute plan and changed-file
 review workflows through a configured local LM Studio provider, preserving prompt
-and result artefacts plus metadata-only usage history. It does not call hosted AI
-providers.
+and result artefacts plus metadata-only usage history. Reasoning-capable models
+use workflow-specific output allowances and at most one bounded, context-safe
+retry, while live phase feedback and the redacted assistant response remain
+visible in the CLI. Friday does not call hosted AI providers.
 
 Implemented CLI commands:
 
@@ -622,8 +633,9 @@ cost estimation domain layer. It combines configured per-million input and
 output token prices with estimated token counts to produce deterministic
 advisory estimates. These estimates are not billing records and should be
 treated as planning guidance rather than billing records. Local execution writes
-real token usage and advisory estimates to metadata-only project history; Friday
-does not publish telemetry.
+real token usage and advisory estimates to metadata-only project history. Aggregate
+usage reporting, cost reports, and budget enforcement remain planned; Friday does
+not publish telemetry.
 
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,

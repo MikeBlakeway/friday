@@ -12,10 +12,10 @@ performing as a conversational novelty.
 - Prefer local, inspectable files and deterministic output over opaque automation.
 - Make the next useful action obvious and keep command output concise.
 - Preserve user control: show what context was loaded, what evidence was used, and
-  what would be shared before any future model call.
-- Design for progressive capability: core workflows should remain useful without
-  model integrations, then gain routing and provider support without changing their
-  fundamental shape.
+  what will be shared before any model call.
+- Design for progressive capability: core workflows remain useful without model
+  execution, while optional local routing and provider support reuse the same
+  inspectable artefacts and approval boundaries.
 - Use simple defaults, explicit policy, and small incremental workflows instead of
   large autonomous operations.
 - Treat privacy, cost, and model choice as first-class product concerns, not

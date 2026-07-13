@@ -44,10 +44,17 @@ hosted provider execution is not.
   from configured per-million token prices and estimated token counts.
 - **Provider contracts** — define provider-neutral model request, response,
   usage, capability, and mock-provider interfaces, plus validated global
-  configuration, LM Studio discovery, guided setup, and explicit local execution.
+  configuration, LM Studio discovery, guided setup, reasoning-response
+  normalisation, and explicit local execution.
+- **Execution and usage** — applies reasoning-aware output allowances, allows one
+  bounded context-safe retry for an implicit ceiling, writes local results, and
+  appends metadata-only success or failure records without prompts or hidden
+  reasoning.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
-  `.friday/output/review-prompt.md` so they are inspectable before any model use.
+  `.friday/output/review-prompt.md` so they are inspectable before any model use;
+  execution results live under `.friday/output/executions/` and usage history
+  under `.friday/runtime/`.
 
 ## Data Flow: `friday run plan|review`
 
@@ -57,8 +64,10 @@ hosted provider execution is not.
    blocking, local routing, provider availability, and advisory cost estimation.
 3. Friday prints the selected local provider/model and expected output location,
    then requires interactive confirmation or the explicit `--yes` flag.
-4. The existing local execution path invokes the provider and writes the normal
-   result artefact and metadata-only usage log.
+4. Friday shows TTY-aware progress, invokes the provider, and may retry once when
+   an implicit output allowance is exhausted and known context limits permit it.
+5. The execution path writes the normal result artefact and metadata-only usage
+   log, then prints a redacted and bounded assistant response to the CLI.
 
 ## Data Flow: `friday plan`
 
@@ -108,12 +117,14 @@ hosted provider execution is not.
 ## Important Boundaries
 
 - **Project memory versus generated output:** source memory is human-maintained;
-  generated prompts are derived artefacts under `.friday/output/`.
+  generated prompts, results, evidence, and runtime history are derived local
+  artefacts. Live generated files remain ignored, while curated and redacted
+  `*.example.md` files may be committed deliberately.
 - **Deterministic evidence versus LLM reasoning:** evidence collection and parsing
   should establish facts before an LLM is asked to interpret them.
-- **Core workflow versus AI providers:** planning and review currently produce
-  neutral prompts plus local route and cost summaries, preserving provider choice
-  and avoiding provider lock-in.
+- **Core workflow versus AI providers:** planning and review produce neutral prompts
+  plus local route and cost summaries. Explicit execution supports only configured
+  localhost LM Studio; hosted-provider execution remains out of scope.
 - **Convenience versus inspectability:** `friday run` coordinates preparation and
   execution but does not bypass prompt artefacts, safety policy, local-only
   routing, or approval.

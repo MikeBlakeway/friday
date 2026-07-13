@@ -52,6 +52,14 @@
       flags, and preservation of existing developer-authored files.
 - [x] Polish onboarding, grouped CLI help, recovery guidance, terminal examples,
       and the Friday-on-Friday walkthrough.
+- [x] FRI-053: normalise LM Studio reasoning responses, diagnose empty output, and
+      record failed attempts without prompts or hidden reasoning.
+- [x] FRI-056: add reasoning-aware workflow output allowances and one bounded,
+      context-safe retry for implicit ceilings.
+- [x] FRI-058: add TTY-aware workflow progress and print a redacted, bounded local
+      assistant response while preserving execution artefacts.
+- [x] FRI-060: reconcile public documentation and dogfooded project memory after
+      the successful Friday-on-Friday local planning run.
 
 ## Later
 
