@@ -40,6 +40,40 @@ export interface ModelTokenUsage {
   totalTokens: number
 }
 
+export type ModelProviderErrorCode =
+  | 'provider-error'
+  | 'malformed-response'
+  | 'missing-content'
+  | 'empty-content'
+  | 'output-limit-exhausted'
+  | 'reasoning-only'
+
+export interface ModelProviderErrorOptions {
+  provider: string
+  model: string
+  code: ModelProviderErrorCode
+  stopReason?: ModelStopReason
+  usage?: ModelTokenUsage
+}
+
+export class ModelProviderError extends Error {
+  readonly provider: string
+  readonly model: string
+  readonly code: ModelProviderErrorCode
+  readonly stopReason: ModelStopReason | undefined
+  readonly usage: ModelTokenUsage | undefined
+
+  constructor(message: string, options: ModelProviderErrorOptions) {
+    super(message)
+    this.name = 'ModelProviderError'
+    this.provider = options.provider
+    this.model = options.model
+    this.code = options.code
+    this.stopReason = options.stopReason
+    this.usage = options.usage
+  }
+}
+
 export interface GenerateModelResponseResult {
   provider: string
   model: string

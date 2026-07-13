@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-empty-length",
+  "object": "chat.completion",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "Internal reasoning consumed the configured output allowance.",
+        "content": ""
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 6725,
+    "completion_tokens": 1200,
+    "total_tokens": 7925
+  }
+}

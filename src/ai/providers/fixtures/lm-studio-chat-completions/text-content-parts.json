@@ -1,0 +1,29 @@
+{
+  "id": "chatcmpl-content-parts",
+  "object": "chat.completion",
+  "model": "qwen-local",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Keep the workflow local"
+          },
+          {
+            "type": "output_text",
+            "text": " and inspectable."
+          }
+        ]
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 7,
+    "total_tokens": 19
+  }
+}

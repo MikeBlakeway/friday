@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-reasoning-only",
+  "object": "chat.completion",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "Internal reasoning exists, but the provider returned no final answer.",
+        "content": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 6725,
+    "completion_tokens": 642,
+    "total_tokens": 7367
+  }
+}

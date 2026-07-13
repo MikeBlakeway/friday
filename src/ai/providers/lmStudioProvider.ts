@@ -1,8 +1,10 @@
+import { ModelProviderError } from './modelProvider.js'
 import type {
   AiModelProvider,
   GenerateModelResponseRequest,
   GenerateModelResponseResult,
   ModelMessage,
+  ModelProviderErrorCode,
   ModelProviderCapabilities,
   ModelStopReason,
   ModelTokenUsage,
@@ -11,9 +13,23 @@ import type {
 export const defaultLmStudioBaseUrl = 'http://127.0.0.1:1234/v1'
 export const defaultLmStudioModel = 'local-model'
 
-export class LmStudioProviderError extends Error {
-  constructor(message: string) {
-    super(message)
+export class LmStudioProviderError extends ModelProviderError {
+  constructor(
+    message: string,
+    options: {
+      model?: string
+      code?: ModelProviderErrorCode
+      stopReason?: ModelStopReason
+      usage?: ModelTokenUsage
+    } = {},
+  ) {
+    super(message, {
+      provider: 'lm-studio',
+      model: options.model ?? 'unknown',
+      code: options.code ?? 'provider-error',
+      ...(options.stopReason === undefined ? {} : { stopReason: options.stopReason }),
+      ...(options.usage === undefined ? {} : { usage: options.usage }),
+    })
     this.name = 'LmStudioProviderError'
   }
 }
@@ -148,18 +164,131 @@ function firstChoice(response: unknown): Record<string, unknown> {
   return choice
 }
 
-function parseMessage(choice: Record<string, unknown>): ModelMessage {
-  const message = choice.message
+interface ParsedTokenUsage {
+  usage: ModelTokenUsage
+  available: boolean
+}
 
-  if (!isRecord(message) || typeof message.content !== 'string') {
-    throw new LmStudioProviderError(
-      'LM Studio returned a malformed response: assistant message content is missing.',
+function parseAssistantText(content: unknown): string | undefined {
+  if (typeof content === 'string') {
+    return content
+  }
+
+  if (!Array.isArray(content)) {
+    return undefined
+  }
+
+  const textParts = content.flatMap((part) => {
+    if (typeof part === 'string') {
+      return [part]
+    }
+
+    if (
+      isRecord(part) &&
+      (part.type === 'text' || part.type === 'output_text') &&
+      typeof part.text === 'string'
+    ) {
+      return [part.text]
+    }
+
+    return []
+  })
+
+  return textParts.length > 0 ? textParts.join('') : undefined
+}
+
+function hasSeparateReasoning(
+  message: Record<string, unknown>,
+  choice: Record<string, unknown>,
+): boolean {
+  const candidates = [message.reasoning_content, message.reasoning, choice.reasoning_content]
+
+  return candidates.some((value) => {
+    if (typeof value === 'string') {
+      return value.trim().length > 0
+    }
+
+    return Array.isArray(value) && value.length > 0
+  })
+}
+
+function formatUsage(parsedUsage: ParsedTokenUsage): string {
+  if (!parsedUsage.available) {
+    return 'usage unavailable'
+  }
+
+  const { inputTokens, outputTokens, totalTokens } = parsedUsage.usage
+
+  return `usage: ${inputTokens} input, ${outputTokens} output, ${totalTokens} total tokens`
+}
+
+function responseError(
+  message: string,
+  input: {
+    model: string
+    code: ModelProviderErrorCode
+    stopReason: ModelStopReason
+    usage: ParsedTokenUsage
+  },
+): LmStudioProviderError {
+  return new LmStudioProviderError(message, {
+    model: input.model,
+    code: input.code,
+    stopReason: input.stopReason,
+    ...(input.usage.available ? { usage: input.usage.usage } : {}),
+  })
+}
+
+function parseMessage(
+  choice: Record<string, unknown>,
+  model: string,
+  stopReason: ModelStopReason,
+  usage: ParsedTokenUsage,
+): ModelMessage {
+  const message = choice.message
+  const finishReason = typeof choice.finish_reason === 'string' ? choice.finish_reason : 'stop'
+  const diagnosticContext = `finish reason: ${finishReason}; ${formatUsage(usage)}`
+
+  if (!isRecord(message)) {
+    throw responseError(
+      `LM Studio provider lm-studio/${model} returned a response without an assistant message (${diagnosticContext}). Check that the loaded model exposes an OpenAI-compatible chat-completion response.`,
+      { model, code: 'malformed-response', stopReason, usage },
+    )
+  }
+
+  const content = message.content === null ? '' : parseAssistantText(message.content)
+
+  if (content === undefined) {
+    throw responseError(
+      `LM Studio provider lm-studio/${model} returned a response without assistant message content (${diagnosticContext}). Check that the loaded model exposes OpenAI-compatible final text content.`,
+      { model, code: 'missing-content', stopReason, usage },
+    )
+  }
+
+  if (content.trim().length === 0) {
+    if (stopReason === 'length') {
+      throw responseError(
+        `LM Studio provider lm-studio/${model} returned no final assistant content after reaching the output token limit (${diagnosticContext}). Increase --max-output-tokens or choose a model that can finish within the configured limit.`,
+        { model, code: 'output-limit-exhausted', stopReason, usage },
+      )
+    }
+
+    if (hasSeparateReasoning(message, choice)) {
+      throw responseError(
+        `LM Studio provider lm-studio/${model} returned separate reasoning but no final assistant content (${diagnosticContext}). Friday does not expose hidden reasoning as the assistant response. Use a model or LM Studio configuration that returns a final answer.`,
+        { model, code: 'reasoning-only', stopReason, usage },
+      )
+    }
+
+    throw responseError(
+      `LM Studio provider lm-studio/${model} returned empty assistant content (${diagnosticContext}). Check the model chat template and LM Studio reasoning-output settings.`,
+      { model, code: 'empty-content', stopReason, usage },
     )
   }
 
   return {
     role: 'assistant',
-    content: message.content,
+    content,
   }
 }
 
@@ -182,12 +311,15 @@ function parseStopReason(choice: Record<string, unknown>): ModelStopReason {
   }
 }
 
-function parseTokenUsage(response: unknown): ModelTokenUsage {
+function parseTokenUsage(response: unknown): ParsedTokenUsage {
   if (!isRecord(response) || response.usage === undefined) {
     return {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
+      available: false,
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+      },
     }
   }
 
@@ -210,9 +342,12 @@ function parseTokenUsage(response: unknown): ModelTokenUsage {
   }
 
   return {
-    inputTokens,
-    outputTokens,
-    totalTokens,
+    available: true,
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens,
+    },
   }
 }
 
@@ -294,13 +429,15 @@ export function createLmStudioProvider(input: CreateLmStudioProviderInput = {}):
 
       const rawResponse = await readJson(response, 'text generation')
       const choice = firstChoice(rawResponse)
+      const stopReason = parseStopReason(choice)
+      const parsedUsage = parseTokenUsage(rawResponse)
 
       return {
         provider: 'lm-studio',
         model,
-        message: parseMessage(choice),
-        usage: parseTokenUsage(rawResponse),
-        stopReason: parseStopReason(choice),
+        message: parseMessage(choice, model, stopReason, parsedUsage),
+        usage: parsedUsage.usage,
+        stopReason,
         rawResponse,
       }
     },

@@ -7,10 +7,12 @@ import type { PrivacyClassificationResult } from '../privacy/privacyClassificati
 import { composeAiRouteRecommendation } from '../routing/composeAiRouteRecommendation.js'
 import type { ComposeAiRouteRecommendationResult } from '../routing/composeAiRouteRecommendation.js'
 import type { AiRoute, AiTaskType, RouteAiRequestResult } from '../routing/modelRouting.js'
+import { ModelProviderError } from '../providers/modelProvider.js'
 import type {
   AiModelProvider,
   GenerateModelResponseRequest,
   GenerateModelResponseResult,
+  ModelTokenUsage,
 } from '../providers/modelProvider.js'
 import { appendExecutionLogRecord, createExecutionLogRecord } from '../usage/executionLog.js'
 import { ensureDir, readTextFile, writeTextFile } from '../../core/fileSystem.js'
@@ -131,12 +133,88 @@ function assertSafeToExecute(result: {
 
 function assertValidProviderResult(result: GenerateModelResponseResult): void {
   if (result.message.role !== 'assistant') {
-    throw new Error('Local provider returned malformed output: assistant message is missing.')
+    throw new ModelProviderError(
+      `Local provider ${result.provider}/${result.model} returned malformed output: assistant message is missing.`,
+      {
+        provider: result.provider,
+        model: result.model,
+        code: 'malformed-response',
+        stopReason: result.stopReason,
+        usage: result.usage,
+      },
+    )
   }
 
   if (result.message.content.trim().length === 0) {
-    throw new Error('Local provider returned malformed output: assistant content is empty.')
+    throw new ModelProviderError(
+      `Local provider ${result.provider}/${result.model} returned empty assistant content (finish reason: ${result.stopReason}; usage: ${result.usage.inputTokens} input, ${result.usage.outputTokens} output, ${result.usage.totalTokens} total tokens).`,
+      {
+        provider: result.provider,
+        model: result.model,
+        code: result.stopReason === 'length' ? 'output-limit-exhausted' : 'empty-content',
+        stopReason: result.stopReason,
+        usage: result.usage,
+      },
+    )
   }
+}
+
+function zeroUsage(): ModelTokenUsage {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+  }
+}
+
+async function recordFailedProviderExecution(input: {
+  options: ExecutePromptOptions
+  promptArtifact: string
+  routeSummary: ComposeAiRouteRecommendationResult
+  costEstimate: AiUsageCostEstimate
+  startedAt: Date
+  completedAt: Date
+  error: unknown
+}): Promise<void> {
+  const providerError = input.error instanceof ModelProviderError ? input.error : undefined
+  const provider = providerError?.provider ?? input.options.modelProvider.capabilities.provider
+  const model =
+    providerError?.model === undefined || providerError.model === 'unknown'
+      ? input.options.modelProvider.capabilities.model
+      : providerError.model
+  const timestamp = input.completedAt.toISOString().replace(/[:.]/g, '-')
+
+  await appendExecutionLogRecord(
+    input.options.projectRoot,
+    createExecutionLogRecord({
+      id: `${input.promptArtifact}#provider-failure-${timestamp}`,
+      workflow: {
+        type: input.options.request.taskType,
+        artifact: input.promptArtifact,
+      },
+      recommendedRoute: input.routeSummary.recommendation.route,
+      chosenRoute: input.routeSummary.recommendation.route,
+      provider,
+      model,
+      startedAt: input.startedAt.toISOString(),
+      completedAt: input.completedAt.toISOString(),
+      latencyMs: Math.max(0, input.completedAt.getTime() - input.startedAt.getTime()),
+      usage: providerError?.usage ?? zeroUsage(),
+      costEstimate: input.costEstimate,
+      result: {
+        status: 'failed',
+        ...(providerError?.stopReason === undefined
+          ? {}
+          : { stopReason: providerError.stopReason }),
+        errorCode: providerError?.code ?? 'provider-error',
+      },
+      privacy: {
+        privacyLevel: input.routeSummary.classification.privacyLevel,
+        blocked: input.routeSummary.classification.blocked,
+        secretDetected: input.routeSummary.classification.secrets.length > 0,
+      },
+    }),
+  )
 }
 
 function buildModelRequest(
@@ -200,10 +278,27 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
   const { prompt, promptArtifact, routeSummary, costEstimate } = preparedExecution
   const executionStartedAt = options.now?.() ?? new Date()
 
-  const providerResult = await options.modelProvider.generateResponse(
-    buildModelRequest(options.request, prompt, routeSummary.classification, promptArtifact),
-  )
-  assertValidProviderResult(providerResult)
+  let providerResult: GenerateModelResponseResult
+
+  try {
+    providerResult = await options.modelProvider.generateResponse(
+      buildModelRequest(options.request, prompt, routeSummary.classification, promptArtifact),
+    )
+    assertValidProviderResult(providerResult)
+  } catch (error) {
+    const executionCompletedAt = options.now?.() ?? new Date()
+
+    await recordFailedProviderExecution({
+      options,
+      promptArtifact,
+      routeSummary,
+      costEstimate,
+      startedAt: executionStartedAt,
+      completedAt: executionCompletedAt,
+      error,
+    })
+    throw error
+  }
 
   const executionCompletedAt = options.now?.() ?? new Date()
   const resultArtifactPath = inferResultArtifactPath(

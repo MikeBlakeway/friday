@@ -17,6 +17,7 @@ Each line is a versioned JSON record. Schema version `1` captures:
 - latency in milliseconds
 - token usage and advisory cost estimates
 - execution result status
+- safe provider failure details such as error code and finish reason
 - privacy level, blocked state, and whether a secret was detected
 - optional developer outcome status: `accepted`, `retried`, `escalated`, or `rejected`
 
@@ -27,6 +28,13 @@ The log remains local. Friday does not upload, synchronise, or send it to an ana
 Execution log records are metadata-only by default. They do not store raw prompts, model output text, detected secret values, API keys, or private content snippets. When a secret is detected, the log can record `secretDetected: true`, but not the matched secret itself.
 
 The execution artefact may still contain provider output for an explicit local run. The usage log is intentionally narrower because its purpose is historical routing and outcome analysis, not replaying prompts.
+
+Provider invocations that fail response validation are also recorded. These
+records may include provider/model, timing, available token usage, finish reason,
+and a stable error code such as `output-limit-exhausted`, `reasoning-only`, or
+`empty-content`. They do not include the provider's raw response, hidden
+reasoning, or the original prompt. A failed invocation does not create a normal
+assistant-result artefact.
 
 ## Reading and summaries
 

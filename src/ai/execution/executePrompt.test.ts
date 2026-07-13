@@ -258,8 +258,36 @@ describe('executePrompt', () => {
           temperature: 0.2,
         },
       }),
-    ).rejects.toThrow('Local provider returned malformed output: assistant content is empty.')
+    ).rejects.toThrow(
+      'Local provider mock-local/mock-coder returned empty assistant content (finish reason: complete; usage: 8 input, 0 output, 8 total tokens).',
+    )
 
     await expect(listExecutionArtifacts(promptPath)).resolves.toEqual([])
+    await expect(readExecutionLogRecords(projectRoot)).resolves.toMatchObject([
+      {
+        workflow: {
+          type: 'plan',
+          artifact: '.friday/output/plan-prompt.md',
+        },
+        provider: 'mock-local',
+        model: 'mock-coder',
+        usage: {
+          inputTokens: 8,
+          outputTokens: 0,
+          totalTokens: 8,
+        },
+        result: {
+          status: 'failed',
+          stopReason: 'complete',
+          errorCode: 'empty-content',
+        },
+      },
+    ])
+
+    const logContent = await readFile(
+      path.join(projectRoot, FRIDAY_PROJECT_DIR, 'runtime', 'execution-log.jsonl'),
+      'utf8',
+    )
+    expect(logContent).not.toContain('Plan the next project milestone')
   })
 })
