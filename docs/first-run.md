@@ -24,10 +24,13 @@ For local development from this repository:
 
 ```bash
 npm install
-npm run build
-npm link
+npm run link:local
 friday help
 ```
+
+The link points at the current checkout and persists across rebuilds. During
+development, `npm run dev:linked` performs the initial build/link and watches
+TypeScript files so the global `friday` command stays current as code changes.
 
 Friday is not currently published to npm. `npm install -g friday` describes the
 future registry path, not an implemented installation option.
@@ -48,7 +51,31 @@ Friday local model setup
 ✓ Configuration saved to ~/.friday/providers.json
 ✓ Test request completed successfully
 Friday is ready to use local models.
+```
 
+Model identifiers vary by machine. Setup never downloads or loads a model and
+never silently starts a process.
+
+## Prepare optional global memory
+
+Global memory lets Friday reuse developer preferences and policies across
+repositories. The interactive command lets you select minimal defaults and
+previews the exact content before asking for final confirmation:
+
+```bash
+friday global init
+```
+
+Existing `~/.friday/*.md` files are always preserved. In a non-interactive
+environment, use `friday global init --minimal --yes` to create every missing
+minimal file explicitly. This command makes no model calls and does not change
+provider configuration.
+
+## Verify the machine
+
+Run doctor after provider setup and any optional global-memory preparation:
+
+```console
 $ friday doctor
 Friday diagnostics
 
@@ -57,6 +84,7 @@ Project
   Action: Run "friday init" in this project to create local project memory.
 
 Global configuration
+✓ Global memory is readable and complete
 ✓ Provider configuration loaded; default local provider: lm-studio
 
 Local provider
@@ -67,9 +95,8 @@ Local provider
 Friday is ready for local execution.
 ```
 
-Model identifiers vary by machine. Setup never downloads or loads a model and
-never silently starts a process. Run `friday doctor --test-provider` when you
-want diagnostics to send a lightweight local generation request.
+Run `friday doctor --test-provider` when you want diagnostics to send a
+lightweight local generation request.
 
 ## Initialise and inspect a project
 
@@ -169,8 +196,8 @@ one-time local setup the complete dogfooding path is:
 git clone https://github.com/MikeBlakeway/friday.git
 cd friday
 npm install
-npm run build
-npm link
+npm run link:local
+friday global init
 friday doctor
 friday evidence --collect
 friday run plan "Review Friday and recommend the next smallest high-value improvement"
@@ -186,14 +213,16 @@ accepting the model's recommendation.
 | Problem                                                         | Next command                    |
 | --------------------------------------------------------------- | ------------------------------- |
 | `.friday/` is missing or partial                                | `friday init`                   |
+| Optional global memory is missing or partial                    | `friday global init`            |
 | Provider configuration is missing or the selected model changed | `friday local setup`            |
 | Readiness is unclear                                            | `friday doctor`                 |
 | Local generation needs verification                             | `friday doctor --test-provider` |
 | Evidence files need refreshing                                  | `friday evidence --collect`     |
 | A non-interactive run needs explicit approval                   | Re-run with `--yes`             |
 
-Global memory is optional. If it is missing, project workflows still work; add
-only the `~/.friday/*.md` files you want reused across repositories.
+Global memory is optional. If it is missing, project workflows still work;
+`friday global init` prepares only the `~/.friday/*.md` files you select and
+preserves any existing content.
 
 ## Verification
 

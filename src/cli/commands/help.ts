@@ -6,6 +6,7 @@ Usage:
 
 Start here:
   friday local setup
+  friday global init
   friday doctor
   friday init
   friday evidence --collect
@@ -13,6 +14,7 @@ Start here:
 
 Setup:
   local setup  Configure a reusable local provider and model
+  global init  Prepare optional reusable developer memory
   init         Initialize project memory in the current project
 
 Preparation and inspection (no model call):

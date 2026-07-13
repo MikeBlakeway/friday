@@ -232,7 +232,7 @@ async function globalConfiguration(
         status: 'warning',
         label: '~/.friday global memory not found',
         detail: 'Global memory is optional; project workflows can continue without it.',
-        action: `Create ${globalMemory.globalMemoryDirPath} if you want reusable developer memory.`,
+        action: 'Run "friday global init" to prepare optional reusable developer memory.',
       })
     } else if (existingFiles.length === globalMemory.files.length) {
       checks.push({
@@ -248,7 +248,7 @@ async function globalConfiguration(
           .filter((file) => !file.exists)
           .map((file) => file.fileName)
           .join(', ')}. Global memory remains optional.`,
-        action: 'Add only the ~/.friday memory files you want Friday to reuse across projects.',
+        action: 'Run "friday global init" to prepare any missing reusable memory files.',
       })
     }
   } catch (error) {
@@ -403,7 +403,7 @@ async function providerSection(input: {
       checks.push({
         status: 'passed',
         label: 'Test generation succeeded',
-        detail: `${response.provider}/${response.model} returned ${response.usage.totalTokens} tokens.`,
+        detail: `${response.provider}/${response.model} returned ${response.usage.totalTokens} tokens with a ${response.diagnostic.maxOutputTokens}-token output allowance${response.diagnostic.adaptiveRetry ? ` after ${response.diagnostic.attempts} adaptive attempts` : ''}.`,
       })
     } catch (error) {
       checks.push({

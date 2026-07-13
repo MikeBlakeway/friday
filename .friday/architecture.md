@@ -17,11 +17,13 @@ hosted provider execution is not.
 ## Current Modules
 
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
-  `friday init`, `friday status`, `friday evidence`, `friday plan`,
-  `friday review`, `friday route`, `friday cost`, `friday doctor`,
-  `friday local setup`, `friday run`, and `friday execute`.
+  `friday init`, `friday global init`, `friday status`, `friday evidence`,
+  `friday plan`, `friday review`, `friday route`, `friday cost`,
+  `friday doctor`, `friday local setup`, `friday run`, and `friday execute`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
+- **Core global memory** — loads optional reusable developer context and provides
+  minimal templates for explicit, non-overwriting global setup.
 - **File-system helpers** — provide small async operations for checking paths and
   reading or writing local files.
 - **Evidence providers foundation** — defines typed evidence summaries, known

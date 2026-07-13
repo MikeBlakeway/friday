@@ -22,8 +22,11 @@
   },
   "scripts": {
     "dev": "tsx src/cli/index.ts",
+    "dev:linked": "npm run link:local && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "clean": "node scripts/clean-dist.mjs",
     "build": "npm run clean && tsc -p tsconfig.build.json",
+    "postbuild": "node scripts/ensure-cli-executable.mjs",
+    "link:local": "node scripts/link-local.mjs",
     "prepack": "npm run build",
     "start": "node dist/cli/index.js",
     "test": "vitest run",

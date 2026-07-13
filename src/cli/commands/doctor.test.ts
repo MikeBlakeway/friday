@@ -138,6 +138,55 @@ describe('collectDoctorReport', () => {
     ])
   })
 
+  it('adapts the diagnostic allowance when a reasoning response exhausts the first limit', async () => {
+    const environment = await createEnvironment()
+    await createCompleteProject(environment.projectRoot)
+    await createCompleteGlobalConfiguration(environment.homeDir)
+    const outputAllowances: number[] = []
+    const providerFetch: LmStudioFetch = async (url, init) => {
+      if (url.endsWith('/models')) {
+        return response({ data: [{ id: 'qwen-local' }] })
+      }
+
+      const body = JSON.parse(String(init?.body)) as { max_tokens: number }
+      outputAllowances.push(body.max_tokens)
+
+      return outputAllowances.length === 1
+        ? response({
+            choices: [
+              {
+                message: { content: '', reasoning_content: 'Internal reasoning.' },
+                finish_reason: 'length',
+              },
+            ],
+            usage: { prompt_tokens: 21, completion_tokens: 64, total_tokens: 85 },
+          })
+        : response({
+            choices: [{ message: { content: 'OK' }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 21, completion_tokens: 8, total_tokens: 29 },
+          })
+    }
+
+    const report = await collectDoctorReport({
+      ...environment,
+      args: ['--test-provider'],
+      providerFetch,
+    })
+
+    expect(report.ready).toBe(true)
+    expect(outputAllowances).toEqual([64, 256])
+    expect(allChecks(report)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'passed',
+          label: 'Test generation succeeded',
+          detail:
+            'lm-studio/qwen-local returned 29 tokens with a 256-token output allowance after 2 adaptive attempts.',
+        }),
+      ]),
+    )
+  })
+
   it('reports partial optional memory and missing required run configuration', async () => {
     const environment = await createEnvironment()
     await mkdir(path.join(environment.projectRoot, '.friday'), { recursive: true })
@@ -169,6 +218,7 @@ describe('collectDoctorReport', () => {
         expect.objectContaining({
           status: 'warning',
           label: 'Global memory is partial (1/5 files)',
+          action: expect.stringContaining('friday global init'),
         }),
         expect.objectContaining({
           status: 'failed',
