@@ -83,6 +83,7 @@ Use local-first project memory.`,
     expect(output).toContain('Provider/model: deepseek/deepseek-v4-pro')
     expect(output).toContain('Warnings:')
     expect(output).toContain('Estimated cost:')
+    expect(output).toContain('Estimated output tokens: 4000')
     expect(output).toContain('Estimated total cost:')
   })
 

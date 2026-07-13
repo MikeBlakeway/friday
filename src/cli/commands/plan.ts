@@ -8,6 +8,7 @@ import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { loadGlobalMemory } from '../../core/globalMemory.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
 import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
+import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
 
 const FRIDAY_OUTPUT_DIR = 'output'
 const PLAN_PROMPT_FILE = 'plan-prompt.md'
@@ -42,7 +43,7 @@ export async function runPlanCommand(options: {
     complexity: 'high',
     confidenceRequirement: 'standard',
     costPreference: 'balanced',
-    estimatedOutputTokens: 1200,
+    estimatedOutputTokens: getDefaultMaxOutputTokens('plan'),
   })
 
   const outputDirPath = path.join(fridayProjectDirPath, FRIDAY_OUTPUT_DIR)

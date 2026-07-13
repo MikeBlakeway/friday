@@ -47,6 +47,8 @@ export interface CreateLmStudioProviderInput {
   baseUrl?: string
   model?: string
   fetch?: LmStudioFetch
+  contextWindowTokens?: number
+  maxOutputTokens?: number
 }
 
 export interface LmStudioAvailability {
@@ -93,7 +95,11 @@ function getFetch(inputFetch: LmStudioFetch | undefined): LmStudioFetch {
   return fetch
 }
 
-function createCapabilities(baseUrl: string, model: string): ModelProviderCapabilities {
+function createCapabilities(
+  baseUrl: string,
+  model: string,
+  input: Pick<CreateLmStudioProviderInput, 'contextWindowTokens' | 'maxOutputTokens'>,
+): ModelProviderCapabilities {
   return {
     provider: 'lm-studio',
     model,
@@ -102,8 +108,17 @@ function createCapabilities(baseUrl: string, model: string): ModelProviderCapabi
     supportsToolCalls: false,
     supportedInputModalities: ['text'],
     supportedOutputModalities: ['text'],
-    maxInputTokens: 8_000,
-    maxOutputTokens: 2_000,
+    ...(input.contextWindowTokens === undefined
+      ? {}
+      : {
+          contextWindowTokens: input.contextWindowTokens,
+          maxInputTokens: input.contextWindowTokens,
+        }),
+    ...(input.maxOutputTokens === undefined
+      ? input.contextWindowTokens === undefined
+        ? {}
+        : { maxOutputTokens: input.contextWindowTokens }
+      : { maxOutputTokens: input.maxOutputTokens }),
     notes: `Optional local provider using LM Studio's OpenAI-compatible endpoint at ${normaliseBaseUrl(
       baseUrl,
     )}.`,
@@ -371,7 +386,7 @@ export function createLmStudioProvider(input: CreateLmStudioProviderInput = {}):
   const configuredFetch = getFetch(input.fetch)
 
   return {
-    capabilities: createCapabilities(baseUrl, model),
+    capabilities: createCapabilities(baseUrl, model, input),
     async checkAvailability(): Promise<LmStudioAvailability> {
       let response: HttpResponseLike
 

@@ -11,6 +11,7 @@ import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { loadGlobalMemory } from '../../core/globalMemory.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
 import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
+import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
 
 const execFileAsync = promisify(execFile)
 const FRIDAY_OUTPUT_DIR = 'output'
@@ -123,7 +124,7 @@ export async function runReviewCommand(options: {
     complexity: 'high',
     confidenceRequirement: 'high',
     costPreference: 'balanced',
-    estimatedOutputTokens: 1000,
+    estimatedOutputTokens: getDefaultMaxOutputTokens('review'),
   })
 
   const outputDirPath = path.join(fridayProjectDirPath, FRIDAY_OUTPUT_DIR)

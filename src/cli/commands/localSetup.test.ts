@@ -131,6 +131,7 @@ describe('runLocalSetupCommand', () => {
     expect(commandCalls).toEqual([])
     expect(fetchCalls).toEqual([
       'http://127.0.0.1:1234/v1/models',
+      'http://127.0.0.1:1234/api/v0/models',
       'http://127.0.0.1:1234/v1/chat/completions',
     ])
     await expect(readFile(path.join(homeDir, '.friday', 'providers.json'), 'utf8')).resolves.toBe(
@@ -319,6 +320,7 @@ describe('runLocalSetupCommand', () => {
     })
     expect(calls).toEqual([
       'http://localhost:4321/v1/models',
+      'http://localhost:4321/api/v0/models',
       'http://localhost:4321/v1/chat/completions',
     ])
   })

@@ -275,7 +275,12 @@ not add provider configuration to the current repository.
 artefacts, print a pre-execution policy and cost summary, ask for approval, and
 execute through the configured default local provider/model. Pass `--yes` for
 explicit non-interactive approval. Use `--provider lm-studio` and
-`--model <loaded-model>` to override the configured selection for one run.
+`--model <loaded-model>` to override the configured selection for one run. Plan
+execution defaults to 4,000 output tokens, review defaults to 3,000, and other
+explicit `friday execute --task <type>` tasks default to 2,000. Pass
+`--max-output-tokens <count>` to set an explicit ceiling. The pre-execution
+summary reports the effective allowance and whether one bounded adaptive retry
+is available.
 Secret-bearing prompts remain blocked before provider invocation, and missing or
 unavailable provider configuration fails with setup guidance.
 `friday plan` and `friday review` only prepare prompt artefacts by default.
@@ -288,10 +293,15 @@ under `.friday/runtime/execution-log.jsonl`; see
 optional machine-level provider settings from `~/.friday/providers.json`,
 discovers LM Studio on common localhost endpoints, and selects either the
 configured model or the only loaded model. It does not require a `local-model`
-alias. `friday cost` provides an advisory local estimate from configured
-provider/model pricing and estimated token counts, while brainstorming,
-specification, hosted provider execution, and explicit escalation commands
-remain post-MVP.
+alias. Defaults and explicit overrides use the same output-token policy as
+`friday run`. When the ceiling is implicit and LM Studio exhausts it before
+producing final content, Friday may retry once with a larger allowance, but only
+within known configured or discovered model limits. Explicit ceilings are never
+silently exceeded. Failed attempts remain metadata-only and do not persist
+hidden reasoning or raw provider responses. `friday cost` provides an advisory
+local estimate from configured provider/model pricing and estimated token counts,
+while brainstorming, specification, hosted provider execution, and explicit
+escalation commands remain post-MVP.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -347,9 +357,10 @@ and LM Studio readiness in one support-friendly report:
 friday doctor
 ```
 
-The normal diagnostic only queries the local OpenAI-compatible `/models`
-endpoint. To also send a small local generation request to the selected model,
-opt in explicitly:
+The normal diagnostic queries the local OpenAI-compatible `/v1/models` endpoint
+and makes a best-effort local `/api/v0/models` request for model context metadata.
+Neither request generates model output. To also send a small local generation
+request to the selected model, opt in explicitly:
 
 ```bash
 friday doctor --test-provider

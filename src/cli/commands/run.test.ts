@@ -59,8 +59,9 @@ function createLocalProvider() {
       supportsToolCalls: false,
       supportedInputModalities: ['text'],
       supportedOutputModalities: ['text'],
-      maxInputTokens: 8_000,
-      maxOutputTokens: 2_000,
+      maxInputTokens: 16_000,
+      maxOutputTokens: 16_000,
+      contextWindowTokens: 16_000,
     },
     responseText: 'Use the prepared local plan.',
   })
@@ -83,6 +84,23 @@ afterEach(async () => {
 })
 
 describe('parseRunArgs', () => {
+  it('uses shared workflow defaults and identifies explicit ceilings', () => {
+    expect(parseRunArgs(['plan', 'Review the architecture', '--yes'])).toMatchObject({
+      maxOutputTokens: 4_000,
+      maxOutputTokensExplicit: false,
+    })
+    expect(parseRunArgs(['review', '--changed', '--yes'])).toMatchObject({
+      maxOutputTokens: 3_000,
+      maxOutputTokensExplicit: false,
+    })
+    expect(
+      parseRunArgs(['plan', 'Review the architecture', '--max-output-tokens', '6000', '--yes']),
+    ).toMatchObject({
+      maxOutputTokens: 6_000,
+      maxOutputTokensExplicit: true,
+    })
+  })
+
   it('parses plan and review workflows with explicit overrides', () => {
     expect(
       parseRunArgs([
@@ -134,6 +152,8 @@ describe('runWorkflowCommand', () => {
     expect(output).toContain('Friday run pre-execution summary')
     expect(output).toContain('Workflow: plan')
     expect(output).toContain('Provider/model: lm-studio/mock-coder')
+    expect(output).toContain('Effective output allowance: 4000 tokens')
+    expect(output).toContain('Adaptive retry: one retry up to 8000 tokens')
     expect(output).toContain('Expected output: .friday/output/executions/')
   })
 

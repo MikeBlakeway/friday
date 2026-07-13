@@ -36,6 +36,7 @@ export type LmStudioDiscoveryResult =
       models: string[]
       selectedModel: string
       selection: 'configured' | 'only-available'
+      modelContextWindowTokens?: Record<string, number>
     })
 
 export interface DiscoverLmStudioProviderInput {
@@ -49,6 +50,10 @@ function normaliseBaseUrl(baseUrl: string): string {
 
 function createModelsEndpoint(baseUrl: string): string {
   return `${normaliseBaseUrl(baseUrl)}/models`
+}
+
+function createModelMetadataEndpoint(baseUrl: string): string {
+  return new URL('/api/v0/models', baseUrl).toString()
 }
 
 function getFetch(inputFetch: LmStudioFetch | undefined): LmStudioFetch {
@@ -89,11 +94,61 @@ function parseModelIds(value: unknown): string[] | undefined {
   return modelIds
 }
 
+function parseModelContextWindows(value: unknown, loadedModels: string[]): Record<string, number> {
+  if (!isRecord(value) || !Array.isArray(value.data)) {
+    return {}
+  }
+
+  const loadedModelSet = new Set(loadedModels)
+  const contextWindows: Record<string, number> = {}
+
+  for (const model of value.data) {
+    if (
+      isRecord(model) &&
+      typeof model.id === 'string' &&
+      loadedModelSet.has(model.id.trim()) &&
+      typeof model.max_context_length === 'number' &&
+      Number.isInteger(model.max_context_length) &&
+      model.max_context_length > 0
+    ) {
+      contextWindows[model.id.trim()] = model.max_context_length
+    }
+  }
+
+  return contextWindows
+}
+
+async function discoverModelContextWindows(
+  baseUrl: string,
+  models: string[],
+  fetch: LmStudioFetch,
+): Promise<Record<string, number>> {
+  if (models.length === 0) {
+    return {}
+  }
+
+  try {
+    const response = await fetch(createModelMetadataEndpoint(baseUrl), { method: 'GET' })
+
+    if (!response.ok) {
+      return {}
+    }
+
+    return parseModelContextWindows(await response.json(), models)
+  } catch {
+    return {}
+  }
+}
+
 function selectModel(
   baseUrl: string,
   models: string[],
   configuredModel: string | undefined,
+  modelContextWindowTokens: Record<string, number>,
 ): LmStudioDiscoveryResult {
+  const contextMetadata =
+    Object.keys(modelContextWindowTokens).length === 0 ? {} : { modelContextWindowTokens }
+
   if (models.length === 0) {
     return {
       status: 'no-models',
@@ -112,6 +167,7 @@ function selectModel(
       models,
       selectedModel: configuredModel,
       selection: 'configured',
+      ...contextMetadata,
       message: `Selected configured LM Studio model: ${configuredModel}.`,
     }
   }
@@ -126,6 +182,7 @@ function selectModel(
       models,
       selectedModel: onlyModel,
       selection: 'only-available',
+      ...contextMetadata,
       message: `Selected the only loaded LM Studio model: ${onlyModel}.`,
     }
   }
@@ -200,7 +257,13 @@ export async function discoverLmStudioProvider(
       }
     }
 
-    return selectModel(baseUrl, models, input.configuration?.model)
+    const discoveredContextWindows = await discoverModelContextWindows(
+      baseUrl,
+      models,
+      configuredFetch,
+    )
+
+    return selectModel(baseUrl, models, input.configuration?.model, discoveredContextWindows)
   }
 
   const failureDetail = failures.length > 0 ? ` Last error: ${failures.at(-1)}.` : ''

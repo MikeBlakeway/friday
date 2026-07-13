@@ -10,6 +10,7 @@ import {
 import { loadGlobalProviderConfiguration } from '../../ai/providers/globalProviderConfig.js'
 import type { LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
 import { resolveLocalModelProvider } from '../../ai/providers/resolveLocalProvider.js'
+import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
 import { runPlanCommand } from './plan.js'
 import { runReviewCommand } from './review.js'
 
@@ -23,6 +24,7 @@ export interface RunCommandArgs {
   model?: string
   yes: boolean
   maxOutputTokens: number
+  maxOutputTokensExplicit: boolean
   temperature: number
 }
 
@@ -71,7 +73,8 @@ export function parseRunArgs(args: string[]): RunCommandArgs {
   const parsed: RunCommandArgs = {
     workflow,
     yes: false,
-    maxOutputTokens: workflow === 'plan' ? 1_200 : 1_000,
+    maxOutputTokens: getDefaultMaxOutputTokens(workflow),
+    maxOutputTokensExplicit: false,
     temperature: 0.2,
   }
 
@@ -94,6 +97,7 @@ export function parseRunArgs(args: string[]): RunCommandArgs {
         break
       case '--max-output-tokens':
         parsed.maxOutputTokens = parsePositiveInteger(value, requireValue(args, index, value))
+        parsed.maxOutputTokensExplicit = true
         index += 1
         break
       case '--temperature':
@@ -176,6 +180,7 @@ export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Pr
     provider: 'local',
     taskType: args.workflow,
     maxOutputTokens: args.maxOutputTokens,
+    ...(args.maxOutputTokensExplicit ? { maxOutputTokensExplicit: true } : {}),
     temperature: args.temperature,
   }
   const modelProvider =
@@ -202,6 +207,14 @@ export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Pr
   console.log(`Route: ${route.decision}`)
   console.log(
     `Provider/model: ${modelProvider.capabilities.provider}/${modelProvider.capabilities.model}`,
+  )
+  console.log(
+    `Effective output allowance: ${preparedExecution.tokenAllowance.effectiveMaxOutputTokens} tokens`,
+  )
+  console.log(
+    preparedExecution.tokenAllowance.retry.enabled
+      ? `Adaptive retry: one retry up to ${preparedExecution.tokenAllowance.retry.maxOutputTokens} tokens`
+      : `Adaptive retry: disabled (${preparedExecution.tokenAllowance.retry.reason})`,
   )
   console.log('Expected output: .friday/output/executions/')
   console.log(

@@ -162,6 +162,7 @@ describe('runReviewCommand', () => {
     expect(output).toContain('Route decision: use-strong-hosted')
     expect(output).toContain('Provider/model: deepseek/deepseek-v4-pro')
     expect(output).toContain('Estimated cost:')
+    expect(output).toContain('Estimated output tokens: 3000')
     expect(output).toContain('Estimated total cost:')
   })
 

@@ -66,8 +66,21 @@ describe('parseExecuteArgs', () => {
       provider: 'local',
       taskType: 'plan',
       maxOutputTokens: 700,
+      maxOutputTokensExplicit: true,
       temperature: 0.1,
     })
+  })
+
+  it('uses task-aware defaults when no output ceiling is provided', () => {
+    expect(
+      parseExecuteArgs(['.friday/output/plan-prompt.md', '--provider', 'local'], '/repo'),
+    ).toMatchObject({ taskType: 'plan', maxOutputTokens: 4_000 })
+    expect(
+      parseExecuteArgs(
+        ['.friday/output/custom-prompt.md', '--provider', 'local', '--task', 'build'],
+        '/repo',
+      ),
+    ).toMatchObject({ taskType: 'build', maxOutputTokens: 2_000 })
   })
 
   it('rejects hosted providers', () => {
@@ -124,6 +137,8 @@ describe('runExecuteCommand', () => {
     )
 
     expect(output).toContain('Provider/model: lm-studio/qwen3-coder-14b')
+    expect(output).toContain('Friday execute pre-execution summary')
+    expect(output).toContain('Effective output allowance: 4000 tokens')
     const generationCall = calls.find((call) => call.url.endsWith('/chat/completions'))
     expect(JSON.parse(String(generationCall?.init?.body))).toMatchObject({
       model: 'qwen3-coder-14b',

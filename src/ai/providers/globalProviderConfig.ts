@@ -10,6 +10,8 @@ export interface LocalProviderConfiguration {
   baseUrl?: string
   model?: string
   autoStart?: boolean
+  contextWindowTokens?: number
+  maxOutputTokens?: number
 }
 
 export interface GlobalProviderConfiguration {
@@ -97,6 +99,14 @@ function assertLocalBaseUrl(value: unknown, field: string, filePath: string): st
   return baseUrl
 }
 
+function assertPositiveInteger(value: unknown, field: string, filePath: string): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw configurationError(filePath, `${field} must be a positive integer.`)
+  }
+
+  return value
+}
+
 function parseProviderConfiguration(
   value: unknown,
   providerId: string,
@@ -106,7 +116,12 @@ function parseProviderConfiguration(
     throw configurationError(filePath, `providers.${providerId} must be an object.`)
   }
 
-  assertOnlyKeys(value, ['baseUrl', 'model', 'autoStart'], `providers.${providerId}`, filePath)
+  assertOnlyKeys(
+    value,
+    ['baseUrl', 'model', 'autoStart', 'contextWindowTokens', 'maxOutputTokens'],
+    `providers.${providerId}`,
+    filePath,
+  )
 
   const configuration: LocalProviderConfiguration = {}
 
@@ -139,6 +154,33 @@ function parseProviderConfiguration(
     }
 
     configuration.autoStart = false
+  }
+
+  if (value.contextWindowTokens !== undefined) {
+    configuration.contextWindowTokens = assertPositiveInteger(
+      value.contextWindowTokens,
+      `providers.${providerId}.contextWindowTokens`,
+      filePath,
+    )
+  }
+
+  if (value.maxOutputTokens !== undefined) {
+    configuration.maxOutputTokens = assertPositiveInteger(
+      value.maxOutputTokens,
+      `providers.${providerId}.maxOutputTokens`,
+      filePath,
+    )
+  }
+
+  if (
+    configuration.contextWindowTokens !== undefined &&
+    configuration.maxOutputTokens !== undefined &&
+    configuration.maxOutputTokens > configuration.contextWindowTokens
+  ) {
+    throw configurationError(
+      filePath,
+      `providers.${providerId}.maxOutputTokens must not exceed providers.${providerId}.contextWindowTokens.`,
+    )
   }
 
   return configuration

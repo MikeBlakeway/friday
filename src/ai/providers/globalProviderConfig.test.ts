@@ -49,6 +49,8 @@ describe('loadGlobalProviderConfiguration', () => {
           baseUrl: 'http://127.0.0.1:1234/v1',
           model: 'qwen3-coder-14b',
           autoStart: false,
+          contextWindowTokens: 32_768,
+          maxOutputTokens: 8_192,
         },
       },
     })
@@ -64,6 +66,8 @@ describe('loadGlobalProviderConfiguration', () => {
             baseUrl: 'http://127.0.0.1:1234/v1',
             model: 'qwen3-coder-14b',
             autoStart: false,
+            contextWindowTokens: 32_768,
+            maxOutputTokens: 8_192,
           },
         },
       },
@@ -85,6 +89,13 @@ describe('loadGlobalProviderConfiguration', () => {
       {
         schemaVersion: 1,
         providers: { 'lm-studio': { apiKey: 'not-supported' } },
+      },
+    ],
+    [
+      'invalid token limits',
+      {
+        schemaVersion: 1,
+        providers: { 'lm-studio': { contextWindowTokens: 0, maxOutputTokens: 1.5 } },
       },
     ],
   ])('rejects %s with an actionable error', async (_description, value) => {
