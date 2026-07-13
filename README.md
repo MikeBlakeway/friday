@@ -280,7 +280,13 @@ execution defaults to 4,000 output tokens, review defaults to 3,000, and other
 explicit `friday execute --task <type>` tasks default to 2,000. Pass
 `--max-output-tokens <count>` to set an explicit ceiling. The pre-execution
 summary reports the effective allowance and whether one bounded adaptive retry
-is available.
+is available. Workflow phases use a subtle spinner in interactive terminals and
+stable timestamped status lines in non-TTY or CI output. After execution, Friday
+prints the assistant response and retains the result artefact path. CLI display
+defaults to 120 lines / 12,000 characters; override either limit with
+`--display-max-lines <count>` or `--display-max-chars <count>`. Displayed content
+is truncated with a notice and likely secrets are redacted, while the full local
+execution JSON remains unchanged for auditability.
 Secret-bearing prompts remain blocked before provider invocation, and missing or
 unavailable provider configuration fails with setup guidance.
 `friday plan` and `friday review` only prepare prompt artefacts by default.
@@ -597,11 +603,11 @@ Implemented CLI commands:
 - `friday evidence`
 - `friday plan <goal...>`
 - `friday review --changed`
-- `friday run plan <goal...> [--yes] [--provider lm-studio] [--model <id>]`
-- `friday run review --changed [--yes] [--provider lm-studio] [--model <id>]`
+- `friday run plan <goal...> [--yes] [--provider lm-studio] [--model <id>] [--display-max-lines <n>] [--display-max-chars <n>]`
+- `friday run review --changed [--yes] [--provider lm-studio] [--model <id>] [--display-max-lines <n>] [--display-max-chars <n>]`
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
-- `friday execute <prompt-path> --provider local`
+- `friday execute <prompt-path> --provider local [--display-max-lines <n>] [--display-max-chars <n>]`
 
 Planned CLI commands include `friday brainstorm`, `friday spec`, `friday design`,
 and `friday escalate`.

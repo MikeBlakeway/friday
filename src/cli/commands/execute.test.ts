@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import { createMockModelProvider } from '../../ai/providers/mockModelProvider.js'
-import { parseExecuteArgs, runExecuteCommand } from './execute.js'
+import { parseExecuteArgs, parseExecuteDisplayPolicy, runExecuteCommand } from './execute.js'
 
 const tempDirs: string[] = []
 
@@ -88,6 +88,22 @@ describe('parseExecuteArgs', () => {
       parseExecuteArgs(['.friday/output/plan-prompt.md', '--provider', 'openai'], '/repo'),
     ).toThrow('friday execute currently supports only --provider local.')
   })
+
+  it('parses assistant display limits without adding them to the execution request', () => {
+    const args = [
+      '.friday/output/plan-prompt.md',
+      '--provider',
+      'local',
+      '--display-max-lines',
+      '25',
+      '--display-max-chars',
+      '2000',
+    ]
+
+    expect(parseExecuteDisplayPolicy(args)).toEqual({ maxLines: 25, maxChars: 2000 })
+    expect(parseExecuteArgs(args, '/repo')).not.toHaveProperty('displayMaxLines')
+    expect(parseExecuteArgs(args, '/repo')).not.toHaveProperty('displayMaxChars')
+  })
 })
 
 describe('runExecuteCommand', () => {
@@ -139,6 +155,8 @@ describe('runExecuteCommand', () => {
     expect(output).toContain('Provider/model: lm-studio/qwen3-coder-14b')
     expect(output).toContain('Friday execute pre-execution summary')
     expect(output).toContain('Effective output allowance: 4000 tokens')
+    expect(output).toContain('Assistant response:\nUse the discovered local model.')
+    expect(output).toContain('Result artefact: .friday/output/executions/')
     const generationCall = calls.find((call) => call.url.endsWith('/chat/completions'))
     expect(JSON.parse(String(generationCall?.init?.body))).toMatchObject({
       model: 'qwen3-coder-14b',

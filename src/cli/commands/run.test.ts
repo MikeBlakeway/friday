@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockModelProvider } from '../../ai/providers/mockModelProvider.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
+import type { StatusReporter } from '../ui/statusReporter.js'
 import { parseRunArgs, runWorkflowCommand } from './run.js'
 
 const execFileAsync = promisify(execFile)
@@ -67,6 +68,27 @@ function createLocalProvider() {
   })
 }
 
+function createStatusRecorder(): { reporter: StatusReporter; events: string[] } {
+  const events: string[] = []
+  return {
+    events,
+    reporter: {
+      start(message) {
+        events.push(`start:${message}`)
+      },
+      success(message) {
+        events.push(`success:${message ?? ''}`)
+      },
+      warn(message) {
+        events.push(`warn:${message}`)
+      },
+      fail(message) {
+        events.push(`fail:${message ?? ''}`)
+      },
+    },
+  }
+}
+
 async function captureOutput(action: () => Promise<void>): Promise<string> {
   const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
   try {
@@ -99,6 +121,17 @@ describe('parseRunArgs', () => {
       maxOutputTokens: 6_000,
       maxOutputTokensExplicit: true,
     })
+    expect(
+      parseRunArgs([
+        'plan',
+        'Review the architecture',
+        '--display-max-lines',
+        '25',
+        '--display-max-chars',
+        '2000',
+        '--yes',
+      ]),
+    ).toMatchObject({ displayMaxLines: 25, displayMaxChars: 2000 })
   })
 
   it('parses plan and review workflows with explicit overrides', () => {
@@ -132,6 +165,7 @@ describe('runWorkflowCommand', () => {
     const projectRoot = await createProject()
     const homeDir = await createConfiguredHome()
     const provider = createLocalProvider()
+    const status = createStatusRecorder()
 
     const output = await captureOutput(() =>
       runWorkflowCommand({
@@ -139,6 +173,7 @@ describe('runWorkflowCommand', () => {
         homeDir,
         args: ['plan', 'Review the architecture', '--yes'],
         localProvider: provider,
+        statusReporter: status.reporter,
         now: () => new Date('2026-07-10T12:00:00.000Z'),
       }),
     )
@@ -155,6 +190,22 @@ describe('runWorkflowCommand', () => {
     expect(output).toContain('Effective output allowance: 4000 tokens')
     expect(output).toContain('Adaptive retry: one retry up to 8000 tokens')
     expect(output).toContain('Expected output: .friday/output/executions/')
+    expect(output).toContain('Assistant response:\nUse the prepared local plan.')
+    expect(output).toContain('Result artefact: .friday/output/executions/')
+    expect(status.events).toEqual([
+      'start:Prompt build',
+      'success:',
+      'start:Privacy classification',
+      'success:',
+      'start:Provider routing',
+      'success:',
+      'start:Output writing',
+      'success:',
+      'start:Model execution',
+      'success:',
+      'start:Output writing',
+      'success:',
+    ])
   })
 
   it('reuses the changed-files review preparation workflow', async () => {
@@ -256,5 +307,30 @@ describe('runWorkflowCommand', () => {
       ),
     ).rejects.toThrow('Local provider unavailable: LM Studio is not running.')
     expect(provider.requests).toEqual([])
+  })
+
+  it('finishes the active model phase with failure when provider execution throws', async () => {
+    const projectRoot = await createProject()
+    const homeDir = await createConfiguredHome()
+    const provider = createLocalProvider()
+    const status = createStatusRecorder()
+    provider.generateResponse = async () => {
+      throw new Error('Local model crashed.')
+    }
+
+    await expect(
+      captureOutput(() =>
+        runWorkflowCommand({
+          projectRoot,
+          homeDir,
+          args: ['plan', 'Review the architecture', '--yes'],
+          localProvider: provider,
+          statusReporter: status.reporter,
+        }),
+      ),
+    ).rejects.toThrow('Local model crashed.')
+
+    expect(status.events.at(-2)).toBe('start:Model execution')
+    expect(status.events.at(-1)).toBe('fail:')
   })
 })

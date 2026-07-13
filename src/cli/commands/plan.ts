@@ -9,6 +9,12 @@ import { loadGlobalMemory } from '../../core/globalMemory.js'
 import { loadProjectMemory } from '../../core/loadProjectMemory.js'
 import { buildAiWorkflowSummary, printAiWorkflowSummary } from './aiWorkflowSummary.js'
 import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
+import {
+  createStatusReporter,
+  withStatusPhase,
+  workflowPhaseLabels,
+  type StatusReporter,
+} from '../ui/statusReporter.js'
 
 const FRIDAY_OUTPUT_DIR = 'output'
 const PLAN_PROMPT_FILE = 'plan-prompt.md'
@@ -17,6 +23,7 @@ export async function runPlanCommand(options: {
   projectRoot: string
   goal: string
   homeDir?: string
+  statusReporter?: StatusReporter
 }): Promise<void> {
   const goal = options.goal.trim()
 
@@ -29,27 +36,44 @@ export async function runPlanCommand(options: {
     throw new Error('Friday project memory is not initialized. Run "friday init" first.')
   }
 
-  const manualEvidencePath = path.join(fridayProjectDirPath, FRIDAY_EVIDENCE_DIR, 'manual.md')
-  const evidence = (await pathExists(manualEvidencePath))
-    ? parseManualEvidence(await readTextFile(manualEvidencePath))
-    : []
-  const projectMemory = await loadProjectMemory(options.projectRoot)
-  const globalMemory = await loadGlobalMemory(options.homeDir)
-  const result = buildPlanningPrompt({ goal, projectMemory, globalMemory, evidence })
-  const aiWorkflowSummary = buildAiWorkflowSummary({
-    prompt: result.prompt,
-    declaredPrivacyLevel: result.effectivePrivacyLevel,
-    taskType: 'plan',
-    complexity: 'high',
-    confidenceRequirement: 'standard',
-    costPreference: 'balanced',
-    estimatedOutputTokens: getDefaultMaxOutputTokens('plan'),
-  })
+  const statusReporter = options.statusReporter ?? createStatusReporter()
+  const result = await withStatusPhase(
+    statusReporter,
+    workflowPhaseLabels.promptBuild,
+    async () => {
+      const manualEvidencePath = path.join(fridayProjectDirPath, FRIDAY_EVIDENCE_DIR, 'manual.md')
+      const evidence = (await pathExists(manualEvidencePath))
+        ? parseManualEvidence(await readTextFile(manualEvidencePath))
+        : []
+      const projectMemory = await loadProjectMemory(options.projectRoot)
+      const globalMemory = await loadGlobalMemory(options.homeDir)
+      return buildPlanningPrompt({ goal, projectMemory, globalMemory, evidence })
+    },
+  )
+  const aiWorkflowSummary = await withStatusPhase(
+    statusReporter,
+    workflowPhaseLabels.privacyClassification,
+    () =>
+      buildAiWorkflowSummary({
+        prompt: result.prompt,
+        declaredPrivacyLevel: result.effectivePrivacyLevel,
+        taskType: 'plan',
+        complexity: 'high',
+        confidenceRequirement: 'standard',
+        costPreference: 'balanced',
+        estimatedOutputTokens: getDefaultMaxOutputTokens('plan'),
+      }),
+  )
+  await withStatusPhase(statusReporter, workflowPhaseLabels.providerRouting, () =>
+    Promise.resolve(aiWorkflowSummary.routeSummary.recommendation.route),
+  )
 
   const outputDirPath = path.join(fridayProjectDirPath, FRIDAY_OUTPUT_DIR)
   const outputPath = path.join(outputDirPath, PLAN_PROMPT_FILE)
-  await ensureDir(outputDirPath)
-  await writeTextFile(outputPath, result.prompt)
+  await withStatusPhase(statusReporter, workflowPhaseLabels.outputWriting, async () => {
+    await ensureDir(outputDirPath)
+    await writeTextFile(outputPath, result.prompt)
+  })
 
   console.log('Friday planning prompt created.')
   console.log('')

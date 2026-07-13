@@ -26,6 +26,7 @@ Preparation and inspection (no model call):
 Execution:
   run          Prepare and execute a plan or review with the configured local provider
   execute      Execute an existing prompt artefact through an explicit local provider
+               Limit response display with --display-max-lines / --display-max-chars
 
 Diagnostics:
   doctor       Check installation, memory, provider and model readiness

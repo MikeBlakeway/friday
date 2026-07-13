@@ -17,6 +17,14 @@ import type {
 import { appendExecutionLogRecord, createExecutionLogRecord } from '../usage/executionLog.js'
 import { ensureDir, readTextFile, writeTextFile } from '../../core/fileSystem.js'
 
+const executionPhaseLabels = {
+  promptBuild: 'Prompt build',
+  privacyClassification: 'Privacy classification',
+  providerRouting: 'Provider routing',
+  modelExecution: 'Model execution',
+  outputWriting: 'Output writing',
+} as const
+
 export type ExecutionProviderChoice = 'local'
 
 export interface LocalProviderAvailability {
@@ -55,6 +63,14 @@ export interface ExecutePromptOptions {
   modelProvider: AvailableLocalModelProvider
   now?: () => Date
   preparedExecution?: PreparedPromptExecution
+  statusReporter?: ExecutionStatusReporter
+}
+
+export interface ExecutionStatusReporter {
+  start(message: string): void
+  success(message?: string): void
+  warn(message: string): void
+  fail(message?: string): void
 }
 
 export interface PreparedPromptExecution {
@@ -82,6 +98,23 @@ export interface ExecutePromptResult {
 
 function estimateInputTokens(prompt: string): number {
   return Math.max(1, Math.ceil(prompt.length / 4))
+}
+
+async function withExecutionStatusPhase<T>(
+  reporter: ExecutionStatusReporter | undefined,
+  message: string,
+  action: () => T | Promise<T>,
+): Promise<T> {
+  reporter?.start(message)
+
+  try {
+    const result = await action()
+    reporter?.success()
+    return result
+  } catch (error) {
+    reporter?.fail()
+    throw error
+  }
 }
 
 function minimumDefined(...values: Array<number | undefined>): number | undefined {
@@ -367,6 +400,7 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
       request: options.request,
       projectRoot: options.projectRoot,
       modelProvider: options.modelProvider,
+      ...(options.statusReporter === undefined ? {} : { statusReporter: options.statusReporter }),
     }))
   const { prompt, promptArtifact, routeSummary, tokenAllowance } = preparedExecution
   const executionStartedAt = options.now?.() ?? new Date()
@@ -380,26 +414,34 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
   let attempt = 1
   let attemptStartedAt = executionStartedAt
 
+  options.statusReporter?.start(executionPhaseLabels.modelExecution)
+
   while (true) {
     try {
       providerResult = await options.modelProvider.generateResponse(
         buildModelRequest(effectiveRequest, prompt, routeSummary.classification, promptArtifact),
       )
       assertValidProviderResult(providerResult)
+      options.statusReporter?.success()
       break
     } catch (error) {
       const attemptCompletedAt = options.now?.() ?? new Date()
 
-      await recordFailedProviderExecution({
-        options,
-        promptArtifact,
-        routeSummary,
-        costEstimate,
-        startedAt: attemptStartedAt,
-        completedAt: attemptCompletedAt,
-        error,
-        attempt,
-      })
+      try {
+        await recordFailedProviderExecution({
+          options,
+          promptArtifact,
+          routeSummary,
+          costEstimate,
+          startedAt: attemptStartedAt,
+          completedAt: attemptCompletedAt,
+          error,
+          attempt,
+        })
+      } catch (recordingError) {
+        options.statusReporter?.fail()
+        throw recordingError
+      }
 
       const canRetry =
         attempt === 1 &&
@@ -408,10 +450,12 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
         error.code === 'output-limit-exhausted'
 
       if (!canRetry) {
+        options.statusReporter?.fail()
         throw error
       }
 
       if (!tokenAllowance.retry.enabled) {
+        options.statusReporter?.fail()
         throw error
       }
 
@@ -425,6 +469,8 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
       )
       attempt += 1
       attemptStartedAt = attemptCompletedAt
+      options.statusReporter?.warn('Model execution reached the output limit; retrying once')
+      options.statusReporter?.start(executionPhaseLabels.modelExecution)
     }
   }
 
@@ -448,36 +494,42 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
     costEstimate,
   }
 
-  await ensureDir(path.dirname(resultArtifactPath))
-  await writeTextFile(resultArtifactPath, createArtifactJson(result))
-  await appendExecutionLogRecord(
-    options.projectRoot,
-    createExecutionLogRecord({
-      id: result.resultArtifact,
-      workflow: {
-        type: options.request.taskType,
-        artifact: promptArtifact,
-      },
-      recommendedRoute: routeSummary.recommendation.route,
-      chosenRoute: result.route,
-      provider: result.provider,
-      model: result.model,
-      startedAt: executionStartedAt.toISOString(),
-      completedAt: executionCompletedAt.toISOString(),
-      latencyMs: Math.max(0, executionCompletedAt.getTime() - executionStartedAt.getTime()),
-      usage: result.usage,
-      costEstimate: result.costEstimate,
-      result: {
-        status: 'succeeded',
-        stopReason: result.stopReason,
-        artifact: result.resultArtifact,
-      },
-      privacy: {
-        privacyLevel: result.classification.privacyLevel,
-        blocked: result.classification.blocked,
-        secretDetected: result.classification.secrets.length > 0,
-      },
-    }),
+  await withExecutionStatusPhase(
+    options.statusReporter,
+    executionPhaseLabels.outputWriting,
+    async () => {
+      await ensureDir(path.dirname(resultArtifactPath))
+      await writeTextFile(resultArtifactPath, createArtifactJson(result))
+      await appendExecutionLogRecord(
+        options.projectRoot,
+        createExecutionLogRecord({
+          id: result.resultArtifact,
+          workflow: {
+            type: options.request.taskType,
+            artifact: promptArtifact,
+          },
+          recommendedRoute: routeSummary.recommendation.route,
+          chosenRoute: result.route,
+          provider: result.provider,
+          model: result.model,
+          startedAt: executionStartedAt.toISOString(),
+          completedAt: executionCompletedAt.toISOString(),
+          latencyMs: Math.max(0, executionCompletedAt.getTime() - executionStartedAt.getTime()),
+          usage: result.usage,
+          costEstimate: result.costEstimate,
+          result: {
+            status: 'succeeded',
+            stopReason: result.stopReason,
+            artifact: result.resultArtifact,
+          },
+          privacy: {
+            privacyLevel: result.classification.privacyLevel,
+            blocked: result.classification.blocked,
+            secretDetected: result.classification.secrets.length > 0,
+          },
+        }),
+      )
+    },
   )
 
   return result
@@ -487,29 +539,45 @@ export async function preparePromptExecution(options: {
   request: ExecutePromptRequest
   projectRoot: string
   modelProvider: AvailableLocalModelProvider
+  statusReporter?: ExecutionStatusReporter
 }): Promise<PreparedPromptExecution> {
   assertLocalProvider(options.request, options.modelProvider)
 
-  const prompt = await readTextFile(options.request.promptPath)
+  const prompt = await withExecutionStatusPhase(
+    options.statusReporter,
+    executionPhaseLabels.promptBuild,
+    () => readTextFile(options.request.promptPath),
+  )
   const promptArtifact = relativeToProject(options.projectRoot, options.request.promptPath)
-  const routeSummary = composeAiRouteRecommendation({
-    prompt,
-    filePath: options.request.promptPath,
-    taskType: options.request.taskType,
-    complexity: 'high',
-    confidenceRequirement: 'standard',
-    costPreference: 'balanced',
-    allowHostedModels: false,
-    allowPremiumModels: false,
-  })
+  const routeSummary = await withExecutionStatusPhase(
+    options.statusReporter,
+    executionPhaseLabels.privacyClassification,
+    () =>
+      composeAiRouteRecommendation({
+        prompt,
+        filePath: options.request.promptPath,
+        taskType: options.request.taskType,
+        complexity: 'high',
+        confidenceRequirement: 'standard',
+        costPreference: 'balanced',
+        allowHostedModels: false,
+        allowPremiumModels: false,
+      }),
+  )
 
-  assertSafeToExecute(routeSummary)
-  await assertProviderAvailable(options.modelProvider)
-  const tokenAllowance = calculateOutputTokenAllowance({
-    request: options.request,
-    prompt,
-    modelProvider: options.modelProvider,
-  })
+  const tokenAllowance = await withExecutionStatusPhase(
+    options.statusReporter,
+    executionPhaseLabels.providerRouting,
+    async () => {
+      assertSafeToExecute(routeSummary)
+      await assertProviderAvailable(options.modelProvider)
+      return calculateOutputTokenAllowance({
+        request: options.request,
+        prompt,
+        modelProvider: options.modelProvider,
+      })
+    },
+  )
 
   return {
     prompt,

@@ -10,7 +10,13 @@ import {
 import type { LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
 import { resolveLocalModelProvider } from '../../ai/providers/resolveLocalProvider.js'
 import type { AiTaskType } from '../../ai/routing/modelRouting.js'
-import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
+import {
+  assistantDisplayDefaults,
+  getDefaultMaxOutputTokens,
+  type AssistantDisplayPolicy,
+} from '../../ai/execution/outputTokenPolicy.js'
+import { printAssistantResponse } from '../ui/assistantResponse.js'
+import { createStatusReporter, type StatusReporter } from '../ui/statusReporter.js'
 
 const taskTypes = [
   'brainstorm',
@@ -32,6 +38,8 @@ export interface ExecuteCommandOptions {
   localProvider?: AvailableLocalModelProvider
   homeDir?: string
   providerFetch?: LmStudioFetch
+  statusReporter?: StatusReporter
+  displayPolicy?: AssistantDisplayPolicy
 }
 
 function parseRequiredValue(args: string[], index: number, flag: string): string {
@@ -134,6 +142,11 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
         request.temperature = parseTemperature(parseRequiredValue(args, index, flag))
         index += 1
         break
+      case '--display-max-lines':
+      case '--display-max-chars':
+        parsePositiveInteger(flag, parseRequiredValue(args, index, flag))
+        index += 1
+        break
       default:
         throw new Error(`Unknown execute option: ${String(flag)}.`)
     }
@@ -150,8 +163,27 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
   return request
 }
 
+export function parseExecuteDisplayPolicy(args: string[]): AssistantDisplayPolicy {
+  const policy = { ...assistantDisplayDefaults }
+
+  for (let index = 1; index < args.length; index += 1) {
+    const flag = args[index]
+    if (flag === '--display-max-lines') {
+      policy.maxLines = parsePositiveInteger(flag, parseRequiredValue(args, index, flag))
+      index += 1
+    } else if (flag === '--display-max-chars') {
+      policy.maxChars = parsePositiveInteger(flag, parseRequiredValue(args, index, flag))
+      index += 1
+    }
+  }
+
+  return policy
+}
+
 export async function runExecuteCommand(options: ExecuteCommandOptions): Promise<void> {
   const request = parseExecuteArgs(options.args, options.projectRoot)
+  const displayPolicy = options.displayPolicy ?? parseExecuteDisplayPolicy(options.args)
+  const statusReporter = options.statusReporter ?? createStatusReporter()
   const modelProvider =
     options.localProvider ??
     (
@@ -164,6 +196,7 @@ export async function runExecuteCommand(options: ExecuteCommandOptions): Promise
     request,
     projectRoot: options.projectRoot,
     modelProvider,
+    statusReporter,
   })
 
   console.log('Friday execute pre-execution summary')
@@ -184,6 +217,7 @@ export async function runExecuteCommand(options: ExecuteCommandOptions): Promise
     projectRoot: options.projectRoot,
     modelProvider,
     preparedExecution,
+    statusReporter,
   })
 
   console.log('Friday prompt executed with an explicit local provider.')
@@ -203,6 +237,11 @@ export async function runExecuteCommand(options: ExecuteCommandOptions): Promise
   console.log(`Output tokens: ${result.usage.outputTokens}`)
   console.log(`Total tokens: ${result.usage.totalTokens}`)
   console.log('')
-  console.log('Output:')
-  console.log(result.resultArtifact)
+  printAssistantResponse({
+    content: result.message.content,
+    resultArtifact: result.resultArtifact,
+    policy: displayPolicy,
+  })
+  console.log('')
+  console.log(`Result artefact: ${result.resultArtifact}`)
 }
