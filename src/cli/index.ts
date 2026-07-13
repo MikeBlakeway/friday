@@ -4,6 +4,7 @@ import { runEvidenceCommand } from './commands/evidence.js'
 import { runExecuteCommand } from './commands/execute.js'
 import { runCostCommand } from './commands/cost.js'
 import { runDoctorCommand } from './commands/doctor.js'
+import { runGlobalInitCommand } from './commands/globalInit.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runLocalSetupCommand } from './commands/localSetup.js'
@@ -65,6 +66,18 @@ async function main(): Promise<void> {
       }
 
       await runLocalSetupCommand({ args: process.argv.slice(4) })
+      return
+    }
+    case 'global': {
+      const subcommand = process.argv[3]
+
+      if (subcommand !== 'init') {
+        throw new Error(
+          'Unknown or missing friday global subcommand. Run "friday global init" to prepare reusable global memory.',
+        )
+      }
+
+      await runGlobalInitCommand({ args: process.argv.slice(4) })
       return
     }
     case 'review':

@@ -11,7 +11,10 @@ describe('runHelpCommand', () => {
       const output = log.mock.calls.map((call) => call.join(' ')).join('\n')
 
       expect(output).toContain('Start here:')
-      expect(output).toContain('friday local setup\n  friday doctor\n  friday init')
+      expect(output).toContain(
+        'friday local setup\n  friday global init\n  friday doctor\n  friday init',
+      )
+      expect(output).toContain('global init  Prepare optional reusable developer memory')
       expect(output).toContain('Setup:')
       expect(output).toContain('Preparation and inspection (no model call):')
       expect(output).toContain('Execution:')

@@ -134,6 +134,14 @@ LM Studio endpoint, and loaded-model selection. It does not generate model outpu
 unless `friday doctor --test-provider` is passed explicitly. Diagnostics never
 download models, start servers, change configuration, or perform repairs.
 
+The lightweight generation test starts with a 64-token output allowance. If the
+provider reports output-limit exhaustion before returning final content, Friday
+retries at 256 and then 1,024 tokens. This observed-behaviour policy supports
+reasoning-capable models without relying on model-name guesses, while keeping
+the retry count and maximum allowance bounded. Other failures, including a
+reasoning-only response that stopped normally, are not retried because more
+tokens would not reliably correct them.
+
 ## Generation
 
 `generateResponse()` sends a minimal OpenAI-compatible

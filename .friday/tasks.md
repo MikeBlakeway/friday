@@ -48,12 +48,13 @@
       optional verification through `friday local setup`.
 - [x] Add one-command local plan and review execution while preserving prompt,
       result, and usage artefacts.
+- [x] Add safe global-memory preparation with previews, explicit unattended
+      flags, and preservation of existing developer-authored files.
 - [x] Polish onboarding, grouped CLI help, recovery guidance, terminal examples,
       and the Friday-on-Friday walkthrough.
 
 ## Later
 
-- [ ] Add global developer memory and policy files alongside per-project memory.
 - [ ] Integrate hosted providers only behind privacy, secret-detection, and
       cost-policy gates.
 - [ ] Add budgets and aggregate cost reports by task, provider, and model.

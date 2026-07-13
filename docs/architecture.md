@@ -17,7 +17,7 @@ flowchart TD
   CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, status, doctor, local setup, evidence, plan, review, execute, route, cost]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, global init, status, doctor, local setup, evidence, plan, review, run, execute, route, cost]
 
   CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentProjectMemory --> PromptBuilders
@@ -37,6 +37,8 @@ flowchart TD
   ExecuteBoundary --> PrivacySafety
   ExecuteBoundary --> GlobalProviderConfig[Current: optional machine config<br/>~/.friday/providers.json]
   CLI --> GuidedSetup[Current: guided local setup<br/>discovery, selection, explicit start consent]
+  CLI --> GlobalMemorySetup[Current: optional global memory setup<br/>preview, selection, preserve existing]
+  GlobalMemorySetup --> CurrentGlobalMemory
   GuidedSetup --> GlobalProviderConfig
   GuidedSetup --> CurrentLocalProvider
   GlobalProviderConfig --> CurrentLocalProvider
@@ -67,6 +69,9 @@ the same routing and privacy boundaries.
 ## Implemented Commands
 
 - `friday init` creates the standard `.friday/` project-memory files.
+- `friday global init` previews minimal reusable preferences and policies, then
+  creates selected missing `~/.friday/*.md` files without overwriting existing
+  memory. Non-interactive setup requires `--minimal --yes`.
 - `friday status` reports whether the expected project-memory files exist.
 - `friday doctor [--test-provider]` reports runtime, memory, configuration, and
   local-provider readiness without changing setup.
@@ -134,6 +139,11 @@ sections and exact duplicate content is included once. Global policy establishes
 the minimum privacy floor: project memory may strengthen the effective privacy
 classification, but it cannot weaken a stricter global secret or privacy
 restriction.
+
+`friday global init` is the optional global-memory preparation boundary. It
+offers local minimal templates, previews selected content, requires confirmation
+before interactive writes, and preserves every existing memory file. It neither
+calls a model nor changes `providers.json`.
 
 `friday evidence` is local and deterministic. It prepares provider files for
 manual evidence, can collect Git, TypeScript, test, and Fallow evidence with

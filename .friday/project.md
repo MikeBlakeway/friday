@@ -62,8 +62,9 @@ telemetry.
 
 - Runtime: Node.js
 - Language: TypeScript with native ES modules
-- CLI: local Node.js executable with `init`, `status`, `doctor`, `local setup`,
-  `evidence`, `plan`, `review`, `run`, `execute`, `route`, and `cost` commands
+- CLI: local Node.js executable with `init`, `global init`, `status`, `doctor`,
+  `local setup`, `evidence`, `plan`, `review`, `run`, `execute`, `route`, and
+  `cost` commands
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`

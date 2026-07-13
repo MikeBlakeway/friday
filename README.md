@@ -24,9 +24,12 @@ Or install from a development checkout:
 
 ```bash
 npm install
-npm run build
-npm link
+npm run link:local
 ```
+
+The local link persists across rebuilds. During active development, run
+`npm run dev:linked` to build, link, and then rebuild `dist` automatically when
+TypeScript files change. Normal builds also restore the CLI executable bit.
 
 Friday is not published to the npm registry yet. A future npm installation will
 use `npm install -g friday`; do not use that command for the current release.
@@ -35,6 +38,7 @@ Configure one reusable local provider and verify the machine:
 
 ```bash
 friday local setup
+friday global init
 friday doctor
 ```
 
@@ -48,10 +52,12 @@ friday run plan "Recommend the next useful improvement"
 ```
 
 `friday local setup` saves the selected local provider and model outside the
-repository at `~/.friday/providers.json`. `friday init` creates inspectable
-project memory without overwriting existing files. Evidence collection runs
-local deterministic tools, and `friday run plan` shows the safety and cost
-preflight before asking permission to call the configured local model.
+repository at `~/.friday/providers.json`. The optional `friday global init`
+command previews minimal reusable preferences and policies before creating only
+missing `~/.friday/*.md` files. `friday init` creates inspectable project memory
+without overwriting existing files. Evidence collection runs local deterministic
+tools, and `friday run plan` shows the safety and cost preflight before asking
+permission to call the configured local model.
 
 The completed run leaves a prompt artefact, result artefact, and metadata-only
 usage history under `.friday/`. Use `--yes` only when you want to approve a run
@@ -155,6 +161,7 @@ The MVP-critical command path is:
 ```bash
 friday init
 friday local setup
+friday global init
 friday doctor
 friday evidence
 friday run plan "<goal>"
@@ -369,10 +376,12 @@ For local development from a checkout:
 
 ```bash
 npm install
-npm run build
-npm link
+npm run link:local
 friday help
 ```
+
+Keep `npm run dev:linked` running while editing to rebuild the linked command
+automatically after TypeScript changes.
 
 Preparation commands do not require API keys and do not call AI providers.
 Execution commands call only the explicitly configured localhost LM Studio
@@ -416,6 +425,11 @@ This memory is optional and reusable across projects. `friday plan` and
 `friday review` load these files in the order shown above when they exist,
 report which files were loaded or missing, and include loaded global memory
 before project memory in generated prompts.
+
+Run `friday global init` for an interactive preview and selection of minimal
+defaults. Existing files are always preserved. For an explicit non-interactive
+setup, use `friday global init --minimal --yes`; this creates all missing files
+with the same previewed defaults and still never overwrites authored memory.
 
 Global policy sets a floor. Project memory can add stricter privacy or secret
 handling requirements, but it cannot silently weaken a stronger global privacy
@@ -568,6 +582,7 @@ Implemented CLI commands:
 - `friday status`
 - `friday doctor [--test-provider]`
 - `friday local setup [--provider lm-studio --base-url <url> --model <id>] [--start-server] [--test]`
+- `friday global init [--minimal] [--yes]`
 - `friday evidence`
 - `friday plan <goal...>`
 - `friday review --changed`
