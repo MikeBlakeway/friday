@@ -14,7 +14,7 @@ execution result if the service or a usable model is not available.
 
 Machine-specific provider settings are optional and live outside repositories
 at `~/.friday/providers.json`. The current schema is versioned and deliberately
-accepts only local endpoint, model, and process-start policy fields:
+accepts only local endpoint, model, token-limit, and process-start policy fields:
 
 ```json
 {
@@ -24,6 +24,8 @@ accepts only local endpoint, model, and process-start policy fields:
     "lm-studio": {
       "baseUrl": "http://127.0.0.1:1234/v1",
       "model": "qwen3-coder-14b",
+      "contextWindowTokens": 32768,
+      "maxOutputTokens": 8192,
       "autoStart": false
     }
   }
@@ -37,7 +39,10 @@ common endpoints `http://127.0.0.1:1234/v1` and
 Configuration is validated before discovery. Base URLs must use plain HTTP on
 `localhost`, `127.0.0.1`, or `::1`; credential fields and arbitrary fields are
 rejected. `autoStart` is reserved for future work and must remain `false` because
-Friday never silently starts provider processes.
+Friday never silently starts provider processes. `contextWindowTokens` and
+`maxOutputTokens` are optional positive integers for installations where model
+metadata is unavailable or the loaded runtime uses a smaller limit. The output
+limit cannot exceed the configured context window.
 
 Provider configuration is separate from repository `.friday/` memory. Do not
 commit machine-level `providers.json` into individual projects.
@@ -85,7 +90,9 @@ failure, and test failure messages include the next corrective action.
 ## Discovery and Model Selection
 
 Friday queries the OpenAI-compatible `/v1/models` endpoint and reads the loaded
-model identifiers. Selection is deterministic:
+model identifiers. It also makes a best-effort request to LM Studio's local
+`/api/v0/models` endpoint for `max_context_length` metadata. Failure or absence of
+that optional metadata does not break model selection. Selection is deterministic:
 
 1. Use `providers.lm-studio.model` when that identifier is loaded.
 2. Automatically use the only loaded model when exactly one is available.
@@ -95,6 +102,12 @@ model identifiers. Selection is deterministic:
 4. When the server has no loaded models, ask the user to load one and retry.
 
 This removes the previous requirement to alias a model as `local-model`.
+
+For execution limits, explicit `providers.lm-studio.contextWindowTokens` and
+`providers.lm-studio.maxOutputTokens` settings take precedence. Otherwise Friday
+uses discovered `max_context_length` when LM Studio provides it. Unknown limits
+remain unknown; the adapter no longer advertises generic 8,000-input and
+2,000-output limits that may not describe the selected model.
 
 ## Code-Level Configuration
 
@@ -154,6 +167,30 @@ Friday uses only the final assistant content. Hidden reasoning is never returned
 as the assistant message, written to the execution artefact, or included in the
 usage history.
 
+### Workflow output allowances
+
+Friday uses one shared output-token policy across prompt preparation,
+`friday run`, and `friday execute`:
+
+- plan: 4,000 output tokens;
+- review: 3,000 output tokens;
+- other explicit task types: 2,000 output tokens.
+
+`--max-output-tokens <count>` always replaces the task default and becomes a hard
+user ceiling. Before generation, Friday estimates input tokens, calculates output
+headroom from the known context window, and fails clearly if the requested input
+and output cannot fit or if the request exceeds a configured model output limit.
+Advisory token and cost estimates use the effective allowance shown in the
+pre-execution summary.
+
+When an implicit allowance ends with `output-limit-exhausted`, Friday can retry
+exactly once. The retry doubles the allowance only up to the known context/output
+ceiling; if no larger known-safe allowance exists, no retry occurs. An explicit
+`--max-output-tokens` value disables adaptive retry. Each failed attempt is
+recorded only as provider/model, timing, usage, stop reason, and error-code
+metadata. Hidden reasoning and raw provider responses are never written to the
+successful result artefact or usage history.
+
 The first supported path is local text generation. Tool calls, streaming, and
 JSON-mode output are deliberately rejected with clear errors until Friday has a
 workflow that needs them.
@@ -184,6 +221,8 @@ The execute command:
 - records failed provider invocations in metadata-only
   `.friday/runtime/execution-log.jsonl` history without storing the prompt,
   hidden reasoning, secrets, or raw provider response.
+- reports the effective output allowance and bounded retry policy before provider
+  generation.
 
 Unavailable providers, blocked input, and malformed provider output fail without
 modifying the source prompt artefact.
@@ -200,8 +239,12 @@ Discovery and generation return or throw user-facing errors when:
 - The response is missing choices, assistant message content, or valid token
   usage.
 - A reasoning model consumes the output allowance before producing final
-  content. The error reports `finish_reason: length`, provider/model, and
-  available usage, and suggests increasing `--max-output-tokens` explicitly.
+  content. An implicit allowance can trigger one context-safe retry; an explicit
+  ceiling or a second exhaustion is returned as an error with
+  `finish_reason: length`, provider/model, and available usage.
+- Estimated input plus requested output cannot fit the configured or discovered
+  context window. Friday fails before generation with the estimated input,
+  available headroom, and corrective options.
 - A response contains separate reasoning but no final answer. Friday reports a
   reasoning-only diagnostic without exposing the reasoning text.
 - A stopped response contains neither final content nor separate reasoning. The

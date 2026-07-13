@@ -234,12 +234,25 @@ function createSavedConfiguration(
   baseUrl: string,
   model: string,
 ): GlobalProviderConfiguration {
+  const existingLmStudio = existing?.providers['lm-studio']
+  const preserveLimits = existingLmStudio?.model === model
+
   return {
     schemaVersion: GLOBAL_PROVIDER_CONFIG_SCHEMA_VERSION,
     defaultProvider: 'lm-studio',
     providers: {
       ...(existing?.providers ?? {}),
-      'lm-studio': { baseUrl, model, autoStart: false },
+      'lm-studio': {
+        baseUrl,
+        model,
+        autoStart: false,
+        ...(preserveLimits && existingLmStudio.contextWindowTokens !== undefined
+          ? { contextWindowTokens: existingLmStudio.contextWindowTokens }
+          : {}),
+        ...(preserveLimits && existingLmStudio.maxOutputTokens !== undefined
+          ? { maxOutputTokens: existingLmStudio.maxOutputTokens }
+          : {}),
+      },
     },
   }
 }

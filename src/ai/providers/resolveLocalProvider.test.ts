@@ -15,13 +15,20 @@ async function createTempHome(): Promise<string> {
   return homeDir
 }
 
-function createModelsFetch(models: string[]): LmStudioFetch {
-  return async () => ({
+function createModelsFetch(models: string[], contextWindowTokens?: number): LmStudioFetch {
+  return async (url) => ({
     ok: true,
     status: 200,
     statusText: 'OK',
     async json() {
-      return { data: models.map((id) => ({ id })) }
+      return {
+        data: models.map((id) => ({
+          id,
+          ...(url.includes('/api/v0/') && contextWindowTokens !== undefined
+            ? { max_context_length: contextWindowTokens }
+            : {}),
+        })),
+      }
     },
   })
 }
@@ -37,7 +44,7 @@ describe('resolveLocalModelProvider', () => {
 
     const result = await resolveLocalModelProvider({
       homeDir,
-      fetch: createModelsFetch(['qwen3-coder-14b']),
+      fetch: createModelsFetch(['qwen3-coder-14b'], 32_768),
     })
 
     expect(result.configurationStatus).toBe('missing')
@@ -49,6 +56,8 @@ describe('resolveLocalModelProvider', () => {
     expect(result.provider.capabilities).toMatchObject({
       provider: 'lm-studio',
       model: 'qwen3-coder-14b',
+      contextWindowTokens: 32_768,
+      maxOutputTokens: 32_768,
     })
   })
 
@@ -66,6 +75,8 @@ describe('resolveLocalModelProvider', () => {
             baseUrl: 'http://localhost:4321/v1',
             model: 'codestral-22b',
             autoStart: false,
+            contextWindowTokens: 16_384,
+            maxOutputTokens: 6_000,
           },
         },
       }),
@@ -84,7 +95,11 @@ describe('resolveLocalModelProvider', () => {
       selection: 'configured',
       selectedModel: 'codestral-22b',
     })
-    expect(result.provider.capabilities.model).toBe('codestral-22b')
+    expect(result.provider.capabilities).toMatchObject({
+      model: 'codestral-22b',
+      contextWindowTokens: 16_384,
+      maxOutputTokens: 6_000,
+    })
   })
 
   it('surfaces discovery states as actionable execution errors', async () => {

@@ -33,7 +33,20 @@ export interface ExecutePromptRequest {
   provider: ExecutionProviderChoice
   taskType: AiTaskType
   maxOutputTokens: number
+  maxOutputTokensExplicit?: true
   temperature: number
+}
+
+export type AdaptiveRetryPolicy =
+  | { enabled: true; maxOutputTokens: number }
+  | { enabled: false; reason: string }
+
+export interface OutputTokenAllowance {
+  estimatedInputTokens: number
+  effectiveMaxOutputTokens: number
+  contextWindowTokens?: number
+  availableOutputTokens?: number
+  retry: AdaptiveRetryPolicy
 }
 
 export interface ExecutePromptOptions {
@@ -49,6 +62,7 @@ export interface PreparedPromptExecution {
   promptArtifact: string
   routeSummary: ComposeAiRouteRecommendationResult
   costEstimate: AiUsageCostEstimate
+  tokenAllowance: OutputTokenAllowance
 }
 
 export interface ExecutePromptResult {
@@ -68,6 +82,84 @@ export interface ExecutePromptResult {
 
 function estimateInputTokens(prompt: string): number {
   return Math.max(1, Math.ceil(prompt.length / 4))
+}
+
+function minimumDefined(...values: Array<number | undefined>): number | undefined {
+  const defined = values.filter((value): value is number => value !== undefined)
+  return defined.length === 0 ? undefined : Math.min(...defined)
+}
+
+function calculateOutputTokenAllowance(input: {
+  request: ExecutePromptRequest
+  prompt: string
+  modelProvider: AiModelProvider
+}): OutputTokenAllowance {
+  const estimatedInputTokens = estimateInputTokens(input.prompt)
+  const { maxInputTokens, maxOutputTokens, contextWindowTokens } = input.modelProvider.capabilities
+
+  if (maxInputTokens !== undefined && estimatedInputTokens > maxInputTokens) {
+    throw new Error(
+      `Estimated input is ${estimatedInputTokens} tokens, exceeding the known provider input limit of ${maxInputTokens} tokens. Shorten the prompt or configure a larger model context.`,
+    )
+  }
+
+  const contextHeadroom =
+    contextWindowTokens === undefined ? undefined : contextWindowTokens - estimatedInputTokens
+
+  if (contextHeadroom !== undefined && contextHeadroom < 1) {
+    throw new Error(
+      `Estimated input is ${estimatedInputTokens} tokens, leaving no output headroom in the known ${contextWindowTokens}-token context window. Shorten the prompt or configure a larger context window.`,
+    )
+  }
+
+  const availableOutputTokens = minimumDefined(contextHeadroom, maxOutputTokens)
+
+  if (contextHeadroom !== undefined && input.request.maxOutputTokens > contextHeadroom) {
+    throw new Error(
+      `Requested ${input.request.maxOutputTokens} output tokens cannot fit: estimated input is ${estimatedInputTokens} tokens and the known context window is ${contextWindowTokens} tokens, leaving ${contextHeadroom} tokens of output headroom. Lower --max-output-tokens, shorten the prompt, or configure a larger context window.`,
+    )
+  }
+
+  if (maxOutputTokens !== undefined && input.request.maxOutputTokens > maxOutputTokens) {
+    throw new Error(
+      `Requested ${input.request.maxOutputTokens} output tokens exceeds the known provider/model output limit of ${maxOutputTokens} tokens. Lower --max-output-tokens or configure an appropriate model limit.`,
+    )
+  }
+
+  let retry: AdaptiveRetryPolicy
+  if (input.request.maxOutputTokensExplicit) {
+    retry = { enabled: false, reason: 'an explicit --max-output-tokens ceiling was provided' }
+  } else if (
+    availableOutputTokens !== undefined &&
+    availableOutputTokens > input.request.maxOutputTokens
+  ) {
+    retry = {
+      enabled: true,
+      maxOutputTokens: Math.min(input.request.maxOutputTokens * 2, availableOutputTokens),
+    }
+  } else if (availableOutputTokens === undefined) {
+    retry = { enabled: false, reason: 'provider/model limits are unknown' }
+  } else {
+    retry = { enabled: false, reason: 'no additional known output headroom is available' }
+  }
+
+  return {
+    estimatedInputTokens,
+    effectiveMaxOutputTokens: input.request.maxOutputTokens,
+    ...(contextWindowTokens === undefined ? {} : { contextWindowTokens }),
+    ...(availableOutputTokens === undefined ? {} : { availableOutputTokens }),
+    retry,
+  }
+}
+
+function estimateExecutionCost(
+  estimatedInputTokens: number,
+  estimatedOutputTokens: number,
+): AiUsageCostEstimate {
+  return estimateAiUsageCost({
+    pricing: findPricing('local', 'local-coder'),
+    usage: { estimatedInputTokens, estimatedOutputTokens },
+  })
 }
 
 function relativeToProject(projectRoot: string, filePath: string): string {
@@ -175,6 +267,7 @@ async function recordFailedProviderExecution(input: {
   startedAt: Date
   completedAt: Date
   error: unknown
+  attempt: number
 }): Promise<void> {
   const providerError = input.error instanceof ModelProviderError ? input.error : undefined
   const provider = providerError?.provider ?? input.options.modelProvider.capabilities.provider
@@ -187,7 +280,7 @@ async function recordFailedProviderExecution(input: {
   await appendExecutionLogRecord(
     input.options.projectRoot,
     createExecutionLogRecord({
-      id: `${input.promptArtifact}#provider-failure-${timestamp}`,
+      id: `${input.promptArtifact}#provider-failure-${input.attempt}-${timestamp}`,
       workflow: {
         type: input.options.request.taskType,
         artifact: input.promptArtifact,
@@ -275,29 +368,64 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
       projectRoot: options.projectRoot,
       modelProvider: options.modelProvider,
     }))
-  const { prompt, promptArtifact, routeSummary, costEstimate } = preparedExecution
+  const { prompt, promptArtifact, routeSummary, tokenAllowance } = preparedExecution
   const executionStartedAt = options.now?.() ?? new Date()
 
   let providerResult: GenerateModelResponseResult
+  let effectiveRequest: ExecutePromptRequest = {
+    ...options.request,
+    maxOutputTokens: tokenAllowance.effectiveMaxOutputTokens,
+  }
+  let costEstimate = preparedExecution.costEstimate
+  let attempt = 1
+  let attemptStartedAt = executionStartedAt
 
-  try {
-    providerResult = await options.modelProvider.generateResponse(
-      buildModelRequest(options.request, prompt, routeSummary.classification, promptArtifact),
-    )
-    assertValidProviderResult(providerResult)
-  } catch (error) {
-    const executionCompletedAt = options.now?.() ?? new Date()
+  while (true) {
+    try {
+      providerResult = await options.modelProvider.generateResponse(
+        buildModelRequest(effectiveRequest, prompt, routeSummary.classification, promptArtifact),
+      )
+      assertValidProviderResult(providerResult)
+      break
+    } catch (error) {
+      const attemptCompletedAt = options.now?.() ?? new Date()
 
-    await recordFailedProviderExecution({
-      options,
-      promptArtifact,
-      routeSummary,
-      costEstimate,
-      startedAt: executionStartedAt,
-      completedAt: executionCompletedAt,
-      error,
-    })
-    throw error
+      await recordFailedProviderExecution({
+        options,
+        promptArtifact,
+        routeSummary,
+        costEstimate,
+        startedAt: attemptStartedAt,
+        completedAt: attemptCompletedAt,
+        error,
+        attempt,
+      })
+
+      const canRetry =
+        attempt === 1 &&
+        tokenAllowance.retry.enabled &&
+        error instanceof ModelProviderError &&
+        error.code === 'output-limit-exhausted'
+
+      if (!canRetry) {
+        throw error
+      }
+
+      if (!tokenAllowance.retry.enabled) {
+        throw error
+      }
+
+      effectiveRequest = {
+        ...effectiveRequest,
+        maxOutputTokens: tokenAllowance.retry.maxOutputTokens,
+      }
+      costEstimate = estimateExecutionCost(
+        tokenAllowance.estimatedInputTokens,
+        effectiveRequest.maxOutputTokens,
+      )
+      attempt += 1
+      attemptStartedAt = attemptCompletedAt
+    }
   }
 
   const executionCompletedAt = options.now?.() ?? new Date()
@@ -306,7 +434,7 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
     executionCompletedAt,
   )
   const result: ExecutePromptResult = {
-    request: options.request,
+    request: effectiveRequest,
     promptArtifact,
     resultArtifact: relativeToProject(options.projectRoot, resultArtifactPath),
     provider: providerResult.provider,
@@ -377,17 +505,20 @@ export async function preparePromptExecution(options: {
 
   assertSafeToExecute(routeSummary)
   await assertProviderAvailable(options.modelProvider)
+  const tokenAllowance = calculateOutputTokenAllowance({
+    request: options.request,
+    prompt,
+    modelProvider: options.modelProvider,
+  })
 
   return {
     prompt,
     promptArtifact,
     routeSummary,
-    costEstimate: estimateAiUsageCost({
-      pricing: findPricing('local', 'local-coder'),
-      usage: {
-        estimatedInputTokens: estimateInputTokens(prompt),
-        estimatedOutputTokens: options.request.maxOutputTokens,
-      },
-    }),
+    tokenAllowance,
+    costEstimate: estimateExecutionCost(
+      tokenAllowance.estimatedInputTokens,
+      tokenAllowance.effectiveMaxOutputTokens,
+    ),
   }
 }

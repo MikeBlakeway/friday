@@ -134,6 +134,7 @@ describe('collectDoctorReport', () => {
     )
     expect(calls).toEqual([
       'http://127.0.0.1:1234/v1/models',
+      'http://127.0.0.1:1234/api/v0/models',
       'http://127.0.0.1:1234/v1/chat/completions',
     ])
   })

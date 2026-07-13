@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import {
   executePrompt,
+  preparePromptExecution,
   type AvailableLocalModelProvider,
   type ExecutePromptRequest,
   type ExecutionProviderChoice,
@@ -9,6 +10,7 @@ import {
 import type { LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
 import { resolveLocalModelProvider } from '../../ai/providers/resolveLocalProvider.js'
 import type { AiTaskType } from '../../ai/routing/modelRouting.js'
+import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
 
 const taskTypes = [
   'brainstorm',
@@ -105,7 +107,7 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
     promptPath: path.resolve(projectRoot, promptPathArg),
     provider: 'local',
     taskType: inferTaskType(promptPathArg),
-    maxOutputTokens: 1_200,
+    maxOutputTokens: getDefaultMaxOutputTokens(inferTaskType(promptPathArg)),
     temperature: 0.2,
   }
   let providerWasSet = false
@@ -125,6 +127,7 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
         break
       case '--max-output-tokens':
         request.maxOutputTokens = parsePositiveInteger(flag, parseRequiredValue(args, index, flag))
+        request.maxOutputTokensExplicit = true
         index += 1
         break
       case '--temperature':
@@ -140,6 +143,10 @@ export function parseExecuteArgs(args: string[], projectRoot: string): ExecutePr
     throw new Error('friday execute requires an explicit provider. Use --provider local.')
   }
 
+  if (!request.maxOutputTokensExplicit) {
+    request.maxOutputTokens = getDefaultMaxOutputTokens(request.taskType)
+  }
+
   return request
 }
 
@@ -153,10 +160,30 @@ export async function runExecuteCommand(options: ExecuteCommandOptions): Promise
         ...(options.providerFetch === undefined ? {} : { fetch: options.providerFetch }),
       })
     ).provider
+  const preparedExecution = await preparePromptExecution({
+    request,
+    projectRoot: options.projectRoot,
+    modelProvider,
+  })
+
+  console.log('Friday execute pre-execution summary')
+  console.log(
+    `Provider/model: ${modelProvider.capabilities.provider}/${modelProvider.capabilities.model}`,
+  )
+  console.log(
+    `Effective output allowance: ${preparedExecution.tokenAllowance.effectiveMaxOutputTokens} tokens`,
+  )
+  console.log(
+    preparedExecution.tokenAllowance.retry.enabled
+      ? `Adaptive retry: one retry up to ${preparedExecution.tokenAllowance.retry.maxOutputTokens} tokens`
+      : `Adaptive retry: disabled (${preparedExecution.tokenAllowance.retry.reason})`,
+  )
+  console.log('')
   const result = await executePrompt({
     request,
     projectRoot: options.projectRoot,
     modelProvider,
+    preparedExecution,
   })
 
   console.log('Friday prompt executed with an explicit local provider.')
@@ -169,6 +196,7 @@ export async function runExecuteCommand(options: ExecuteCommandOptions): Promise
   console.log(`Blocked: ${result.route.blocked ? 'yes' : 'no'}`)
   console.log(`Route decision: ${result.route.decision}`)
   console.log(`Provider/model: ${result.provider}/${result.model}`)
+  console.log(`Effective output allowance: ${result.request.maxOutputTokens} tokens`)
   console.log('')
   console.log('Usage:')
   console.log(`Input tokens: ${result.usage.inputTokens}`)

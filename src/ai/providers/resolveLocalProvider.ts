@@ -52,6 +52,12 @@ export async function resolveLocalModelProvider(
           ...(configuredProvider?.autoStart === undefined
             ? {}
             : { autoStart: configuredProvider.autoStart }),
+          ...(configuredProvider?.contextWindowTokens === undefined
+            ? {}
+            : { contextWindowTokens: configuredProvider.contextWindowTokens }),
+          ...(configuredProvider?.maxOutputTokens === undefined
+            ? {}
+            : { maxOutputTokens: configuredProvider.maxOutputTokens }),
         }
   const discovery = await discoverLmStudioProvider({
     ...(providerConfiguration === undefined ? {} : { configuration: providerConfiguration }),
@@ -62,12 +68,20 @@ export async function resolveLocalModelProvider(
     throw new Error(`${discovery.message} Run "friday local setup" to repair local provider setup.`)
   }
 
+  const contextWindowTokens =
+    providerConfiguration?.contextWindowTokens ??
+    discovery.modelContextWindowTokens?.[discovery.selectedModel]
+
   return {
     configurationStatus: configurationResult.status,
     discovery,
     provider: createLmStudioProvider({
       baseUrl: discovery.baseUrl,
       model: discovery.selectedModel,
+      ...(contextWindowTokens === undefined ? {} : { contextWindowTokens }),
+      ...(providerConfiguration?.maxOutputTokens === undefined
+        ? {}
+        : { maxOutputTokens: providerConfiguration.maxOutputTokens }),
       ...(input.fetch === undefined ? {} : { fetch: input.fetch }),
     }),
   }

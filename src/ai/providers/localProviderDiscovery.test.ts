@@ -43,13 +43,22 @@ describe('discoverLmStudioProvider', () => {
   })
 
   it('automatically selects the only discovered model', async () => {
-    const fetch: LmStudioFetch = async () => createResponse({ data: [{ id: 'qwen3-coder-14b' }] })
+    const fetch: LmStudioFetch = async (url) =>
+      createResponse({
+        data: [
+          {
+            id: 'qwen3-coder-14b',
+            ...(url.includes('/api/v0/') ? { max_context_length: 32_768 } : {}),
+          },
+        ],
+      })
 
     await expect(discoverLmStudioProvider({ fetch })).resolves.toEqual({
       status: 'ready',
       provider: 'lm-studio',
       baseUrl: 'http://127.0.0.1:1234/v1',
       models: ['qwen3-coder-14b'],
+      modelContextWindowTokens: { 'qwen3-coder-14b': 32_768 },
       selectedModel: 'qwen3-coder-14b',
       selection: 'only-available',
       message: 'Selected the only loaded LM Studio model: qwen3-coder-14b.',
@@ -74,7 +83,15 @@ describe('discoverLmStudioProvider', () => {
     const calls: string[] = []
     const fetch: LmStudioFetch = async (url) => {
       calls.push(url)
-      return createResponse({ data: [{ id: 'codestral-22b' }, { id: 'qwen3-coder-14b' }] })
+      return createResponse({
+        data: [
+          { id: 'codestral-22b' },
+          {
+            id: 'qwen3-coder-14b',
+            ...(url.includes('/api/v0/') ? { max_context_length: 65_536 } : {}),
+          },
+        ],
+      })
     }
 
     await expect(
@@ -91,11 +108,15 @@ describe('discoverLmStudioProvider', () => {
       provider: 'lm-studio',
       baseUrl: 'http://localhost:4321/v1',
       models: ['codestral-22b', 'qwen3-coder-14b'],
+      modelContextWindowTokens: { 'qwen3-coder-14b': 65_536 },
       selectedModel: 'qwen3-coder-14b',
       selection: 'configured',
       message: 'Selected configured LM Studio model: qwen3-coder-14b.',
     })
-    expect(calls).toEqual(['http://localhost:4321/v1/models'])
+    expect(calls).toEqual([
+      'http://localhost:4321/v1/models',
+      'http://localhost:4321/api/v0/models',
+    ])
   })
 
   it('lists available choices when the configured model is not loaded', async () => {

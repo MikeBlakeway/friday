@@ -82,6 +82,24 @@ describe('createLmStudioProvider', () => {
       supportedOutputModalities: ['text'],
     })
     expect(provider.capabilities.notes).toContain(defaultLmStudioBaseUrl)
+    expect(provider.capabilities).not.toHaveProperty('maxInputTokens')
+    expect(provider.capabilities).not.toHaveProperty('maxOutputTokens')
+    expect(provider.capabilities).not.toHaveProperty('contextWindowTokens')
+  })
+
+  it('exposes configured or discovered model limits without hardcoded generic values', () => {
+    const { fetch } = createFetch({})
+    const provider = createLmStudioProvider({
+      fetch,
+      contextWindowTokens: 32_768,
+      maxOutputTokens: 8_192,
+    })
+
+    expect(provider.capabilities).toMatchObject({
+      contextWindowTokens: 32_768,
+      maxInputTokens: 32_768,
+      maxOutputTokens: 8_192,
+    })
   })
 
   it('checks availability against the configured local endpoint', async () => {

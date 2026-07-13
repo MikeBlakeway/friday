@@ -91,8 +91,9 @@ export interface ModelProviderCapabilities {
   supportsToolCalls: boolean
   supportedInputModalities: ModelModality[]
   supportedOutputModalities: ModelModality[]
-  maxInputTokens: number
-  maxOutputTokens: number
+  maxInputTokens?: number
+  maxOutputTokens?: number
+  contextWindowTokens?: number
   notes?: string
 }
 
