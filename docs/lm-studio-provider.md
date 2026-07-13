@@ -218,6 +218,11 @@ The execute command:
 - checks the local provider availability endpoint before generation;
 - writes a successful assistant response, usage, route, safety result, and
   advisory local cost estimate to `.friday/output/executions/*.json`;
+- reports workflow phases with a subtle TTY spinner or stable timestamped lines
+  in non-TTY / CI output;
+- prints the assistant response after execution, redacting likely secrets and
+  applying configurable `--display-max-lines` / `--display-max-chars` limits
+  without changing the full local execution artefact;
 - records failed provider invocations in metadata-only
   `.friday/runtime/execution-log.jsonl` history without storing the prompt,
   hidden reasoning, secrets, or raw provider response.

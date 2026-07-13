@@ -10,9 +10,15 @@ import {
 import { loadGlobalProviderConfiguration } from '../../ai/providers/globalProviderConfig.js'
 import type { LmStudioFetch } from '../../ai/providers/lmStudioProvider.js'
 import { resolveLocalModelProvider } from '../../ai/providers/resolveLocalProvider.js'
-import { getDefaultMaxOutputTokens } from '../../ai/execution/outputTokenPolicy.js'
+import {
+  assistantDisplayDefaults,
+  getDefaultMaxOutputTokens,
+  type AssistantDisplayPolicy,
+} from '../../ai/execution/outputTokenPolicy.js'
 import { runPlanCommand } from './plan.js'
 import { runReviewCommand } from './review.js'
+import { printAssistantResponse } from '../ui/assistantResponse.js'
+import { createStatusReporter, type StatusReporter } from '../ui/statusReporter.js'
 
 type RunWorkflow = 'plan' | 'review'
 
@@ -26,6 +32,8 @@ export interface RunCommandArgs {
   maxOutputTokens: number
   maxOutputTokensExplicit: boolean
   temperature: number
+  displayMaxLines: number
+  displayMaxChars: number
 }
 
 export interface RunWorkflowCommandOptions {
@@ -37,6 +45,8 @@ export interface RunWorkflowCommandOptions {
   interactive?: boolean
   confirm?: (question: string) => Promise<boolean>
   now?: () => Date
+  statusReporter?: StatusReporter
+  displayPolicy?: AssistantDisplayPolicy
 }
 
 function requireValue(args: string[], index: number, flag: string): string {
@@ -76,6 +86,8 @@ export function parseRunArgs(args: string[]): RunCommandArgs {
     maxOutputTokens: getDefaultMaxOutputTokens(workflow),
     maxOutputTokensExplicit: false,
     temperature: 0.2,
+    displayMaxLines: assistantDisplayDefaults.maxLines,
+    displayMaxChars: assistantDisplayDefaults.maxChars,
   }
 
   for (let index = 1; index < args.length; index += 1) {
@@ -102,6 +114,14 @@ export function parseRunArgs(args: string[]): RunCommandArgs {
         break
       case '--temperature':
         parsed.temperature = parseTemperature(requireValue(args, index, value))
+        index += 1
+        break
+      case '--display-max-lines':
+        parsed.displayMaxLines = parsePositiveInteger(value, requireValue(args, index, value))
+        index += 1
+        break
+      case '--display-max-chars':
+        parsed.displayMaxChars = parsePositiveInteger(value, requireValue(args, index, value))
         index += 1
         break
       default:
@@ -148,6 +168,11 @@ function formatMoney(value: number, currency: string): string {
 
 export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Promise<void> {
   const args = parseRunArgs(options.args)
+  const statusReporter = options.statusReporter ?? createStatusReporter()
+  const displayPolicy = options.displayPolicy ?? {
+    maxLines: args.displayMaxLines,
+    maxChars: args.displayMaxChars,
+  }
   const configuration = await loadGlobalProviderConfiguration(options.homeDir)
   if (configuration.status === 'missing') {
     throw new Error(
@@ -160,12 +185,14 @@ export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Pr
       projectRoot: options.projectRoot,
       ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
       goal: args.goal ?? '',
+      statusReporter,
     })
   } else {
     await runReviewCommand({
       projectRoot: options.projectRoot,
       ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
       args: ['--changed'],
+      statusReporter,
     })
   }
 
@@ -243,12 +270,18 @@ export async function runWorkflowCommand(options: RunWorkflowCommandOptions): Pr
     projectRoot: options.projectRoot,
     modelProvider,
     preparedExecution,
+    statusReporter,
     ...(options.now === undefined ? {} : { now: options.now }),
   })
 
   console.log('')
   console.log('Friday workflow executed locally.')
   console.log(`Prompt artefact: ${result.promptArtifact}`)
+  printAssistantResponse({
+    content: result.message.content,
+    resultArtifact: result.resultArtifact,
+    policy: displayPolicy,
+  })
   console.log(`Result artefact: ${result.resultArtifact}`)
   console.log(`Usage: ${result.usage.totalTokens} total tokens`)
 }
