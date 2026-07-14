@@ -18,7 +18,7 @@ flowchart TD
   CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, global init, status, doctor, local setup, evidence, plan, review, run, execute, route, cost]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, global init, status, doctor, local setup, evidence, plan, review, run, execute, route, cost, usage]
 
   CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentProjectMemory --> PromptBuilders
@@ -46,11 +46,12 @@ flowchart TD
   ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
   ExecutionOutputs --> CurrentUsage[Current: metadata-only usage history<br/>.friday/runtime/execution-log.jsonl]
+  CurrentUsage --> UsageSummary[Current: read-only local summary<br/>friday usage]
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
   Recommendation -.-> PlannedProviders[Planned: hosted provider integrations<br/>OpenAI, Anthropic, DeepSeek]
-  CurrentUsage -.-> PlannedReporting[Planned: aggregate usage reporting<br/>cost reports and budget enforcement]
+  UsageSummary -.-> PlannedReporting[Planned: cross-project reporting<br/>richer cost reports and budget enforcement]
   PlannedProviders -.-> PlannedReporting
   PlannedReporting -.-> CostModel
   PlannedCockpit[Planned: richer cockpit UI] -.-> CLI
@@ -96,6 +97,8 @@ Hosted-provider execution remains planned and outside the current product.
   files or calling a provider.
 - `friday cost` estimates advisory provider/model cost from estimated token
   counts and built-in pricing.
+- `friday usage` reads metadata-only local execution history and reports recorded
+  token totals, advisory cost, outcomes, and workflow/provider-model counts.
 - `friday execute <prompt-path> --provider local` executes an existing generated
   prompt through the explicit local provider boundary and writes an inspectable
   execution result.
@@ -160,6 +163,12 @@ the recommendation.
 `friday cost` is advisory. It accepts explicit provider, model, and estimated
 token counts, then prints deterministic input, output, and total cost estimates.
 
+`friday usage` is a local, deterministic, read-only reporting boundary. It reads
+`.friday/runtime/execution-log.jsonl` through the usage-domain helpers, can filter
+by completion time, and groups records by workflow or provider/model. It reports
+real recorded token usage alongside advisory cost totals without printing prompts,
+responses, secrets, or private snippets. A missing log is treated as empty history.
+
 `friday run` is the convenience orchestration boundary. It prepares the normal
 plan or review prompt, resolves the configured or explicitly overridden LM
 Studio model, reuses the execution safety and cost preflight, prints the route
@@ -195,8 +204,8 @@ interactive confirmation or an explicit `--start-server` flag.
   redacted `*.example.md` artefacts may be committed as documentation.
 - Evidence providers are deterministic sources of facts, not AI providers.
 - Routing and cost estimation remain advisory around execution. Metadata-only
-  local usage logging exists, but aggregate usage reporting and budget enforcement
-  do not.
+  local usage logging and per-project summaries exist, but cross-project reporting
+  and budget enforcement do not.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
 - LM Studio execution is optional and local-only. It is available through the
@@ -206,6 +215,6 @@ interactive confirmation or an explicit `--start-server` flag.
 
 ## Planned Architecture Work
 
-- Add aggregate usage reporting, cost reports, and budget enforcement on top of
-  implemented metadata-only local execution history.
+- Add cross-project reporting, richer cost reports, and budget enforcement on top
+  of implemented metadata-only local execution history and summaries.
 - Add hosted provider implementations behind the provider contracts.

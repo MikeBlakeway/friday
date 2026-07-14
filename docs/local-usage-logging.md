@@ -38,13 +38,34 @@ assistant-result artefact.
 
 ## Reading and summaries
 
-The usage log helpers can append records, read them back in file order, and summarise local history. The basic summary reports:
+The usage log helpers can append records, read them back in file order, and summarise local history. Run the read-only CLI command from a project root:
+
+```bash
+friday usage
+friday usage --since 24h
+friday usage --since 2026-07-01 --group-by workflow
+friday usage --group-by model
+```
+
+`--since` accepts a positive duration using `m`, `h`, `d`, or `w`, or a date
+that JavaScript can parse. Duration filters are relative to the current time and
+records are selected by completion time. `--group-by workflow` or
+`--group-by model` narrows the grouping section; the default includes both.
+
+The summary reports:
 
 - total record count
+- successful, failed, and blocked attempt counts
+- recorded input, output, and total token counts
+- advisory cost totals by currency
 - counts by workflow
 - counts by provider/model
-- counts by execution result status
 - retry and escalation counts
 - counts for each developer outcome status
 
 Malformed JSONL is rejected with a line-specific error so local history can be repaired without guessing which record failed.
+
+A missing log is an empty history, not an error. The command never prints raw
+prompts, model responses, secret values, or private snippets because those fields
+are not part of the execution-log schema. Advisory cost is not a billing record;
+local-model financial cost may correctly be zero.

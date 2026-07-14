@@ -367,8 +367,32 @@ into published telemetry or a prompt replay store.
 
 **Trade-offs**
 
-The log is project-local and intentionally incomplete. Aggregate usage reporting,
-cross-project cost reports, and budget enforcement remain planned.
+The log is project-local and intentionally incomplete. Cross-project aggregate
+usage reporting, richer cost reports, and budget enforcement remain planned.
+
+### 2026-07-13 — Expose execution history through a read-only local summary
+
+**Context**
+
+Metadata-only execution records were inspectable as JSONL but did not yet answer
+routine questions about real token usage, outcomes, workflow mix, or model choice
+from the CLI.
+
+**Decision**
+
+Add `friday usage` on top of the existing read and summary helpers. Report real
+recorded token totals and advisory cost, support completion-time filtering and
+workflow/provider-model grouping, and preserve the metadata-only privacy boundary.
+
+**Reasoning**
+
+A deterministic read-only view validates the local history model and provides
+evidence for later budget policy without introducing telemetry or enforcement.
+
+**Trade-offs**
+
+The summary is project-local, advisory, and non-billing. Local-model financial
+cost may be zero; cross-project reporting and budget enforcement remain planned.
 
 ### 2026-07-13 — Use reasoning-aware allowances and one bounded adaptive retry
 

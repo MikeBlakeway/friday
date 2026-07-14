@@ -20,6 +20,7 @@ describe('runHelpCommand', () => {
       expect(output).toContain('Execution:')
       expect(output).toContain('Diagnostics:')
       expect(output).toContain('Advanced policy tools:')
+      expect(output).toContain('usage        Summarise local execution history')
     } finally {
       log.mockRestore()
     }

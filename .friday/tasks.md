@@ -2,7 +2,7 @@
 
 ## Backlog
 
-- [ ] Add post-MVP aggregate usage reporting and budget policy.
+- [ ] Add post-MVP cross-project usage reporting and budget policy.
 - [ ] Add hosted-provider execution behind privacy, secret, routing, and cost
       gates.
 
@@ -60,6 +60,8 @@
       assistant response while preserving execution artefacts.
 - [x] FRI-060: reconcile public documentation and dogfooded project memory after
       the successful Friday-on-Friday local planning run.
+- [x] FRI-061: expose metadata-only execution history through a read-only local
+      usage summary with time filtering and workflow/model grouping.
 
 ## Later
 

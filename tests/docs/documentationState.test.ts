@@ -19,13 +19,16 @@ describe('documented implementation state', () => {
 
     for (const document of [readme, architecture, roadmap]) {
       expect(document).toMatch(/metadata-only usage (?:history|logging|record)/i)
-      expect(document).toMatch(/aggregate usage reporting/i)
+      expect(document).toMatch(/friday usage/i)
+      expect(document).toMatch(/recorded token/i)
+      expect(document).toMatch(/cross-project/i)
       expect(document).toMatch(/budget/i)
       expect(document).toMatch(/hosted-provider\s+execution|hosted provider execution/i)
     }
 
     expect(readme).not.toContain('- [ ] Token usage logging (post-MVP)')
     expect(architecture).not.toContain('Planned: usage logging')
+    expect(architecture).not.toContain('Planned: aggregate usage reporting')
     expect(architecture).not.toContain('until usage logging exists')
   })
 
@@ -35,7 +38,7 @@ describe('documented implementation state', () => {
       readProjectFile('.friday/tasks.md'),
     ])
 
-    for (const issue of ['FRI-053', 'FRI-056', 'FRI-058']) {
+    for (const issue of ['FRI-053', 'FRI-056', 'FRI-058', 'FRI-061']) {
       expect(tasks).toContain(issue)
     }
 

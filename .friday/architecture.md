@@ -19,7 +19,8 @@ hosted provider execution is not.
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
   `friday init`, `friday global init`, `friday status`, `friday evidence`,
   `friday plan`, `friday review`, `friday route`, `friday cost`,
-  `friday doctor`, `friday local setup`, `friday run`, and `friday execute`.
+  `friday usage`, `friday doctor`, `friday local setup`, `friday run`, and
+  `friday execute`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
 - **Core global memory** — loads optional reusable developer context and provides
@@ -49,7 +50,8 @@ hosted provider execution is not.
 - **Execution and usage** — applies reasoning-aware output allowances, allows one
   bounded context-safe retry for an implicit ceiling, writes local results, and
   appends metadata-only success or failure records without prompts or hidden
-  reasoning.
+  reasoning. Read-only usage reporting totals recorded tokens and advisory cost,
+  filters by completion time, and groups by workflow or provider/model.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
   `.friday/output/review-prompt.md` so they are inspectable before any model use;
@@ -114,6 +116,16 @@ hosted provider execution is not.
 4. The command prints the estimate without reading provider credentials, logging
    real usage, or calling a provider.
 
+## Data Flow: `friday usage`
+
+1. The CLI reads `.friday/runtime/execution-log.jsonl` through the existing
+   usage-domain helper.
+2. An optional `--since` filter selects records by completion time.
+3. The shared summary helper totals real recorded tokens, advisory cost, results,
+   retries, escalations, workflows, and provider/models.
+4. The command prints metadata only and never mutates history or displays prompts,
+   responses, secrets, or private snippets.
+
 ## Important Boundaries
 
 - **Project memory versus generated output:** source memory is human-maintained;
@@ -139,7 +151,7 @@ hosted provider execution is not.
 
 - Add hosted provider implementations behind the existing interfaces and safety
   gates; local LM Studio execution is already implemented.
-- Add budget policy and aggregate cost reporting on top of existing local usage
-  logging.
+- Add budget policy, richer cost reports, and cross-project aggregation on top of
+  existing local usage logging and per-project summaries.
 - Add repeatable brainstorming, specification, refactoring, and escalation
   workflows built on the same core memory and evidence boundaries.
