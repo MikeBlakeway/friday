@@ -215,71 +215,190 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
   return record
 }
 
-function assertObject(
+const WORKFLOW_TYPES = [
+  'brainstorm',
+  'plan',
+  'spec',
+  'design',
+  'build',
+  'review',
+  'refactor',
+  'test',
+  'ship',
+  'ask',
+  'escalate',
+] as const
+const ROUTE_DECISIONS = [
+  'no-ai-required',
+  'use-local',
+  'use-cheap-hosted',
+  'use-strong-hosted',
+  'use-premium',
+  'blocked',
+] as const
+const ROUTE_PROVIDERS = ['none', 'local', 'deepseek', 'openai', 'anthropic'] as const
+const ROUTE_MODEL_TIERS = ['none', 'local', 'cheap-hosted', 'strong-hosted', 'premium'] as const
+const ROUTE_MODELS = [
+  'none',
+  'local-coder',
+  'deepseek-v4-flash',
+  'deepseek-v4-pro',
+  'gpt-5',
+  'gpt-5.5',
+  'claude-opus',
+] as const
+const PRIVACY_LEVELS = ['public', 'internal', 'private-repo', 'sensitive', 'secret'] as const
+const RESULT_STATUSES = ['succeeded', 'failed', 'blocked'] as const
+const DEVELOPER_OUTCOME_STATUSES = ['accepted', 'retried', 'escalated', 'rejected'] as const
+const BUDGET_OVERRIDE_REASONS = ['warning-acknowledged', 'hard-limit'] as const
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
+
+function invalidField(lineNumber: number, fieldName: string): never {
+  throw new Error(`Malformed execution log record at line ${lineNumber}: invalid ${fieldName}.`)
+}
+
+function assertRecord(
   value: unknown,
-  lineNumber: number,
-): asserts value is Record<string, unknown> {
-  if (!isRecord(value)) {
-    throw new Error(`Malformed execution log record at line ${lineNumber}: expected object.`)
-  }
-}
-
-function assertSchemaVersion(record: Record<string, unknown>, lineNumber: number): void {
-  if (record.schemaVersion !== EXECUTION_LOG_SCHEMA_VERSION) {
-    throw new Error(
-      `Malformed execution log record at line ${lineNumber}: unsupported schemaVersion.`,
-    )
-  }
-}
-
-function assertRequiredString(
-  record: Record<string, unknown>,
-  fieldName: string,
-  lineNumber: number,
-): void {
-  if (typeof record[fieldName] !== 'string') {
-    throw new Error(
-      `Malformed execution log record at line ${lineNumber}: missing required fields.`,
-    )
-  }
-}
-
-function assertRequiredNumber(
-  record: Record<string, unknown>,
-  fieldName: string,
-  lineNumber: number,
-): void {
-  if (typeof record[fieldName] !== 'number') {
-    throw new Error(
-      `Malformed execution log record at line ${lineNumber}: missing required fields.`,
-    )
-  }
-}
-
-function assertNestedRecord(
-  record: Record<string, unknown>,
   fieldName: string,
   lineNumber: number,
 ): Record<string, unknown> {
-  const value = record[fieldName]
-
   if (!isRecord(value)) {
-    throw new Error(
-      `Malformed execution log record at line ${lineNumber}: missing required fields.`,
-    )
+    invalidField(lineNumber, fieldName)
   }
 
   return value
 }
 
-function assertAllowedString(
-  record: Record<string, unknown>,
+function assertNonEmptyString(value: unknown, fieldName: string, lineNumber: number): void {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    invalidField(lineNumber, fieldName)
+  }
+}
+
+function assertOptionalNonEmptyString(value: unknown, fieldName: string, lineNumber: number): void {
+  if (value !== undefined) {
+    assertNonEmptyString(value, fieldName, lineNumber)
+  }
+}
+
+function assertAllowedValue(
+  value: unknown,
   fieldName: string,
   allowed: readonly string[],
   lineNumber: number,
 ): void {
-  if (typeof record[fieldName] !== 'string' || !allowed.includes(record[fieldName])) {
-    throw new Error(`Malformed execution log record at line ${lineNumber}: invalid ${fieldName}.`)
+  if (typeof value !== 'string' || !allowed.includes(value)) {
+    invalidField(lineNumber, fieldName)
+  }
+}
+
+function assertBoolean(value: unknown, fieldName: string, lineNumber: number): void {
+  if (typeof value !== 'boolean') {
+    invalidField(lineNumber, fieldName)
+  }
+}
+
+function assertFiniteNonNegativeNumber(
+  value: unknown,
+  fieldName: string,
+  lineNumber: number,
+  integer = false,
+): asserts value is number {
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    (integer && !Number.isInteger(value))
+  ) {
+    invalidField(lineNumber, fieldName)
+  }
+}
+
+function assertIsoTimestamp(value: unknown, fieldName: string, lineNumber: number): void {
+  if (
+    typeof value !== 'string' ||
+    !ISO_TIMESTAMP.test(value) ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    invalidField(lineNumber, fieldName)
+  }
+}
+
+function assertRoute(value: unknown, fieldName: string, lineNumber: number): void {
+  const route = assertRecord(value, fieldName, lineNumber)
+  assertAllowedValue(route.decision, `${fieldName}.decision`, ROUTE_DECISIONS, lineNumber)
+  assertAllowedValue(route.provider, `${fieldName}.provider`, ROUTE_PROVIDERS, lineNumber)
+  assertAllowedValue(route.modelTier, `${fieldName}.modelTier`, ROUTE_MODEL_TIERS, lineNumber)
+  assertAllowedValue(route.model, `${fieldName}.model`, ROUTE_MODELS, lineNumber)
+  assertNonEmptyString(route.reason, `${fieldName}.reason`, lineNumber)
+  assertBoolean(route.requiresApproval, `${fieldName}.requiresApproval`, lineNumber)
+  assertBoolean(route.blocked, `${fieldName}.blocked`, lineNumber)
+}
+
+function assertTokenUsage(value: unknown, fieldName: string, lineNumber: number): void {
+  const usage = assertRecord(value, fieldName, lineNumber)
+  const inputTokens = usage.inputTokens
+  const outputTokens = usage.outputTokens
+  const totalTokens = usage.totalTokens
+  assertFiniteNonNegativeNumber(inputTokens, `${fieldName}.inputTokens`, lineNumber, true)
+  assertFiniteNonNegativeNumber(outputTokens, `${fieldName}.outputTokens`, lineNumber, true)
+  assertFiniteNonNegativeNumber(totalTokens, `${fieldName}.totalTokens`, lineNumber, true)
+
+  if (totalTokens !== inputTokens + outputTokens) {
+    invalidField(lineNumber, `${fieldName}.totalTokens`)
+  }
+}
+
+function assertCostEstimate(value: unknown, lineNumber: number): void {
+  const costEstimate = assertRecord(value, 'costEstimate', lineNumber)
+  assertNonEmptyString(costEstimate.provider, 'costEstimate.provider', lineNumber)
+  assertNonEmptyString(costEstimate.model, 'costEstimate.model', lineNumber)
+
+  if (typeof costEstimate.currency !== 'string' || !/^[A-Z]{3}$/.test(costEstimate.currency)) {
+    invalidField(lineNumber, 'costEstimate.currency')
+  }
+
+  const estimatedInputTokens = costEstimate.estimatedInputTokens
+  const estimatedOutputTokens = costEstimate.estimatedOutputTokens
+  const estimatedTotalTokens = costEstimate.estimatedTotalTokens
+  assertFiniteNonNegativeNumber(
+    estimatedInputTokens,
+    'costEstimate.estimatedInputTokens',
+    lineNumber,
+    true,
+  )
+  assertFiniteNonNegativeNumber(
+    estimatedOutputTokens,
+    'costEstimate.estimatedOutputTokens',
+    lineNumber,
+    true,
+  )
+  assertFiniteNonNegativeNumber(
+    estimatedTotalTokens,
+    'costEstimate.estimatedTotalTokens',
+    lineNumber,
+    true,
+  )
+  assertFiniteNonNegativeNumber(
+    costEstimate.estimatedTotalCost,
+    'costEstimate.estimatedTotalCost',
+    lineNumber,
+  )
+  assertBoolean(costEstimate.advisory, 'costEstimate.advisory', lineNumber)
+
+  if (costEstimate.advisory !== true) {
+    invalidField(lineNumber, 'costEstimate.advisory')
+  }
+
+  assertAllowedValue(
+    costEstimate.basis,
+    'costEstimate.basis',
+    ['estimated-token-counts'],
+    lineNumber,
+  )
+
+  if (estimatedTotalTokens !== estimatedInputTokens + estimatedOutputTokens) {
+    invalidField(lineNumber, 'costEstimate.estimatedTotalTokens')
   }
 }
 
@@ -287,53 +406,62 @@ function assertExecutionLogRecord(
   value: unknown,
   lineNumber: number,
 ): asserts value is ExecutionLogRecord {
-  assertObject(value, lineNumber)
-  assertSchemaVersion(value, lineNumber)
-  assertRequiredString(value, 'id', lineNumber)
-  assertRequiredString(value, 'provider', lineNumber)
-  assertRequiredString(value, 'model', lineNumber)
-  assertRequiredString(value, 'startedAt', lineNumber)
-  assertRequiredString(value, 'completedAt', lineNumber)
-  assertRequiredNumber(value, 'latencyMs', lineNumber)
-  assertRequiredString(assertNestedRecord(value, 'workflow', lineNumber), 'type', lineNumber)
-  const usage = assertNestedRecord(value, 'usage', lineNumber)
-  assertRequiredNumber(usage, 'inputTokens', lineNumber)
-  assertRequiredNumber(usage, 'outputTokens', lineNumber)
-  assertRequiredNumber(usage, 'totalTokens', lineNumber)
-  const costEstimate = assertNestedRecord(value, 'costEstimate', lineNumber)
-  assertRequiredString(costEstimate, 'currency', lineNumber)
-  assertRequiredNumber(costEstimate, 'estimatedTotalCost', lineNumber)
-  assertAllowedString(
-    assertNestedRecord(value, 'result', lineNumber),
-    'status',
-    ['succeeded', 'failed', 'blocked'],
-    lineNumber,
-  )
-  assertRequiredString(assertNestedRecord(value, 'privacy', lineNumber), 'privacyLevel', lineNumber)
+  const record = assertRecord(value, 'record', lineNumber)
 
-  if (value.developerOutcome !== undefined) {
-    assertAllowedString(
-      assertNestedRecord(value, 'developerOutcome', lineNumber),
-      'status',
-      ['accepted', 'retried', 'escalated', 'rejected'],
-      lineNumber,
+  if (record.schemaVersion !== EXECUTION_LOG_SCHEMA_VERSION) {
+    throw new Error(
+      `Malformed execution log record at line ${lineNumber}: unsupported schemaVersion; use schemaVersion ${EXECUTION_LOG_SCHEMA_VERSION}.`,
     )
   }
 
-  if (value.budgetOverride !== undefined) {
-    const budgetOverride = assertNestedRecord(value, 'budgetOverride', lineNumber)
-    if (budgetOverride.schemaVersion !== BUDGET_OVERRIDE_SCHEMA_VERSION) {
-      throw new Error(
-        `Malformed execution log record at line ${lineNumber}: invalid budgetOverride.`,
-      )
-    }
-    assertAllowedString(
-      budgetOverride,
-      'reason',
-      ['warning-acknowledged', 'hard-limit'],
+  assertNonEmptyString(record.id, 'id', lineNumber)
+  const workflow = assertRecord(record.workflow, 'workflow', lineNumber)
+  assertAllowedValue(workflow.type, 'workflow.type', WORKFLOW_TYPES, lineNumber)
+  assertOptionalNonEmptyString(workflow.artifact, 'workflow.artifact', lineNumber)
+  assertRoute(record.recommendedRoute, 'recommendedRoute', lineNumber)
+  assertRoute(record.chosenRoute, 'chosenRoute', lineNumber)
+  assertNonEmptyString(record.provider, 'provider', lineNumber)
+  assertNonEmptyString(record.model, 'model', lineNumber)
+  assertIsoTimestamp(record.startedAt, 'startedAt', lineNumber)
+  assertIsoTimestamp(record.completedAt, 'completedAt', lineNumber)
+  assertFiniteNonNegativeNumber(record.latencyMs, 'latencyMs', lineNumber)
+  assertTokenUsage(record.usage, 'usage', lineNumber)
+  assertCostEstimate(record.costEstimate, lineNumber)
+
+  const result = assertRecord(record.result, 'result', lineNumber)
+  assertAllowedValue(result.status, 'result.status', RESULT_STATUSES, lineNumber)
+  assertOptionalNonEmptyString(result.stopReason, 'result.stopReason', lineNumber)
+  assertOptionalNonEmptyString(result.artifact, 'result.artifact', lineNumber)
+  assertOptionalNonEmptyString(result.errorCode, 'result.errorCode', lineNumber)
+
+  const privacy = assertRecord(record.privacy, 'privacy', lineNumber)
+  assertAllowedValue(privacy.privacyLevel, 'privacy.privacyLevel', PRIVACY_LEVELS, lineNumber)
+  assertBoolean(privacy.blocked, 'privacy.blocked', lineNumber)
+  assertBoolean(privacy.secretDetected, 'privacy.secretDetected', lineNumber)
+
+  if (record.developerOutcome !== undefined) {
+    const outcome = assertRecord(record.developerOutcome, 'developerOutcome', lineNumber)
+    assertAllowedValue(
+      outcome.status,
+      'developerOutcome.status',
+      DEVELOPER_OUTCOME_STATUSES,
       lineNumber,
     )
-    assertRequiredString(budgetOverride, 'recordedAt', lineNumber)
+    assertOptionalNonEmptyString(outcome.note, 'developerOutcome.note', lineNumber)
+  }
+
+  if (record.budgetOverride !== undefined) {
+    const budgetOverride = assertRecord(record.budgetOverride, 'budgetOverride', lineNumber)
+    if (budgetOverride.schemaVersion !== BUDGET_OVERRIDE_SCHEMA_VERSION) {
+      invalidField(lineNumber, 'budgetOverride.schemaVersion')
+    }
+    assertAllowedValue(
+      budgetOverride.reason,
+      'budgetOverride.reason',
+      BUDGET_OVERRIDE_REASONS,
+      lineNumber,
+    )
+    assertIsoTimestamp(budgetOverride.recordedAt, 'budgetOverride.recordedAt', lineNumber)
   }
 }
 

@@ -370,6 +370,22 @@ into published telemetry or a prompt replay store.
 The log is project-local and intentionally incomplete. Cross-project aggregate
 usage reporting, richer cost reports, and budget enforcement remain planned.
 
+### 2026-07-14 — Validate execution-history schema before safety evaluation
+
+**Decision**
+
+Validate every version-1 execution-log record at read time before usage summaries
+or hosted-budget evaluation consume it. Reject malformed route, timestamp,
+token, cost, privacy, result, outcome, and override fields with the exact JSONL
+line and field path. Version 1 remains supported; unsupported older versions
+must be repaired or migrated explicitly rather than being treated as current.
+
+**Reasoning**
+
+Execution history is developer-owned but informs financial safety policy. A
+partial write or manual edit must not create misleading totals or cause a later
+generic dereference failure.
+
 ### 2026-07-13 — Expose execution history through a read-only local summary
 
 **Context**
