@@ -173,11 +173,19 @@ describe('runUsageCommand', () => {
 
     await appendExecutionLogRecord(
       projectRoot,
-      createRecord({ id: 'old', completedAt: '2026-07-11T12:00:00.000Z' }),
+      createRecord({
+        id: 'old',
+        startedAt: '2026-07-11T11:59:59.000Z',
+        completedAt: '2026-07-11T12:00:00.000Z',
+      }),
     )
     await appendExecutionLogRecord(
       projectRoot,
-      createRecord({ id: 'recent', completedAt: '2026-07-13T11:00:00.000Z' }),
+      createRecord({
+        id: 'recent',
+        startedAt: '2026-07-13T10:59:59.000Z',
+        completedAt: '2026-07-13T11:00:00.000Z',
+      }),
     )
 
     const output = await captureUsageOutput({ projectRoot, args: ['--since', '24h'], now })
