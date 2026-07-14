@@ -39,9 +39,14 @@ review workflows through a local LM Studio provider. It preserves prompt and
 result artefacts plus metadata-only usage history, supports reasoning-aware output
 allowances with one bounded retry, reports live workflow phases, displays a
 redacted bounded assistant response, and provides read-only per-project usage
-summaries with time filtering and workflow/model grouping. It still does not call
-hosted providers, load API keys, stream model output, enforce budgets, aggregate
-usage across projects, or publish telemetry.
+summaries with time filtering and workflow/model grouping. Developers can record
+a separate accepted, retried, escalated, or rejected judgement with `friday
+outcome`; outcome events are append-only and the latest event is the effective
+summary value. Friday also evaluates versioned global/project hosted-cost policy
+from local execution history and exposes it through `friday usage --budget`.
+It still does not call hosted providers, load API keys, stream model output,
+enforce a budget at a hosted-provider boundary, aggregate usage across projects,
+or publish telemetry.
 
 ## Core Goals
 
@@ -65,12 +70,27 @@ usage across projects, or publish telemetry.
 
 - Runtime: Node.js
 - Language: TypeScript with native ES modules
-- CLI: local Node.js executable with `init`, `global init`, `status`, `doctor`,
-  `local setup`, `evidence`, `plan`, `review`, `run`, `execute`, `route`, and
-  `cost`, and `usage` commands
+- CLI: local Node.js executable
 - Testing: Vitest
 - Tooling: TypeScript compiler, Prettier, and Fallow static analysis
 - Project memory: Markdown files in `.friday/`
+
+## Implemented CLI Commands
+
+- `friday init`
+- `friday global init [--minimal] [--yes]`
+- `friday status`
+- `friday doctor [--test-provider]`
+- `friday local setup [--provider lm-studio --base-url <url> --model <id>] [--start-server] [--test]`
+- `friday evidence`
+- `friday plan <goal...>`
+- `friday review --changed`
+- `friday run plan <goal...>` and `friday run review --changed`
+- `friday route`
+- `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
+- `friday usage [--since <duration|date>] [--group-by workflow|model] [--budget]`
+- `friday outcome <execution-id|latest> <accepted|retried|escalated|rejected>`
+- `friday execute <prompt-path> --provider local`
 
 ## Open Questions
 

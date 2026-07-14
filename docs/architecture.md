@@ -18,7 +18,7 @@ flowchart TD
   CLI --> CurrentGlobalMemory[Current: global memory<br/>~/.friday/*.md]
   CLI --> CurrentProjectMemory[Current: project memory<br/>.friday/*.md]
   CLI --> CurrentEvidence[Current: evidence files<br/>.friday/evidence/*]
-  CLI --> CurrentCommands[Current: local workflow commands<br/>init, global init, status, doctor, local setup, evidence, plan, review, run, execute, route, cost, usage]
+  CLI --> CurrentCommands[Current: local workflow commands<br/>init, global init, status, doctor, local setup, evidence, plan, review, run, execute, route, cost, usage, outcome]
 
   CurrentGlobalMemory --> PromptBuilders[Current: planning and review<br/>prompt builders]
   CurrentProjectMemory --> PromptBuilders
@@ -47,6 +47,8 @@ flowchart TD
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
   ExecutionOutputs --> CurrentUsage[Current: metadata-only usage history<br/>.friday/runtime/execution-log.jsonl]
   CurrentUsage --> OutcomeHistory[Current: structured outcome events<br/>.friday/runtime/outcome-log.jsonl]
+  CLI --> OutcomeCommand[Current: developer judgement<br/>friday outcome]
+  OutcomeCommand --> OutcomeHistory
   OutcomeHistory --> UsageSummary[Current: local summary<br/>friday usage]
   CurrentUsage --> BudgetPolicy[Current: versioned hosted-cost policy<br/>global/project JSON]
   BudgetPolicy --> BudgetSummary[Current: local budget state<br/>friday usage --budget]
@@ -104,6 +106,10 @@ Hosted-provider execution remains planned and outside the current product.
   token totals, advisory cost, outcomes, and workflow/provider-model counts.
   `friday usage --budget` evaluates current-project hosted usage against a
   versioned global/project aggregate-cost policy without calling a provider.
+- `friday outcome <execution-id|latest> <status>` records a developer judgement
+  separately from provider execution status. It appends a structured event to
+  `.friday/runtime/outcome-log.jsonl`; the latest event for an execution is the
+  effective usage-summary outcome without rewriting history.
 - `friday execute <prompt-path> --provider local` executes an existing generated
   prompt through the explicit local provider boundary and writes an inspectable
   execution result.
@@ -126,8 +132,9 @@ Hosted-provider execution remains planned and outside the current product.
 - `src/ai/providers/` owns provider-neutral model contracts, the mock provider,
   global provider configuration, local service discovery and selection, and the
   optional LM Studio local provider adapter.
-- `src/ai/usage/` owns the local execution log schema, append/read helpers, and
-  summary helpers for workflow, provider/model, retry, and escalation counts.
+- `src/ai/usage/` owns the local execution and outcome log schemas, append/read
+  helpers, and summary helpers for workflow, provider/model, retry, execution
+  result, and developer-outcome counts.
 - `src/ai/budget/` owns versioned budget-policy parsing, restrictive global/project
   resolution, history-backed hosted-cost evaluation, and preflight override
   metadata contracts.
@@ -172,13 +179,17 @@ the recommendation.
 token counts, then prints deterministic input, output, and total cost estimates.
 
 `friday usage` is a local, deterministic, read-only reporting boundary. It reads
-`.friday/runtime/execution-log.jsonl` through the usage-domain helpers, can filter
-by completion time, and groups records by workflow or provider/model. It reports
-real recorded token usage alongside advisory cost totals without printing prompts,
-responses, secrets, or private snippets. A missing log is treated as empty history.
-With `--budget`, it reads the same history and optional global/project JSON policy
-files to report current calendar-month hosted usage, allowance, and policy status.
-This is a preflight contract for future hosted providers; current execution remains
+`.friday/runtime/execution-log.jsonl` and `.friday/runtime/outcome-log.jsonl`
+through the usage-domain helpers, can filter by completion time, and groups records
+by workflow or provider/model. Execution status says whether a provider attempt
+completed; developer outcome is the separate judgement recorded with `friday
+outcome`. Both logs are append-only, and the latest outcome event for an execution
+is the effective summary value. The command reports metadata and advisory cost
+totals without printing prompts, responses, secrets, or private snippets. A missing
+log is treated as empty history. With `--budget`, it reads execution history and
+optional global/project JSON policy files to report current calendar-month hosted
+usage, allowance, and policy status. Budget evaluation and preflight contracts are
+implemented, but no hosted provider is currently invoked; execution remains
 local-only.
 
 `friday run` is the convenience orchestration boundary. It prepares the normal

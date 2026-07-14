@@ -22,6 +22,7 @@ friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 friday usage --since 7d
 friday usage --budget
+friday outcome <execution-id> accepted
 ```
 
 Preparation commands gather local project context, write deterministic evidence,
@@ -29,6 +30,23 @@ apply privacy and secret-safety policy, recommend a model route, estimate
 advisory cost, and leave inspectable artefacts without calling a provider.
 Execution requires a configured localhost provider and explicit approval, then
 writes a result artefact and metadata-only usage record.
+
+## Implemented CLI Commands
+
+- `friday init`
+- `friday global init [--minimal] [--yes]`
+- `friday status`
+- `friday doctor [--test-provider]`
+- `friday local setup [--provider lm-studio --base-url <url> --model <id>] [--start-server] [--test]`
+- `friday evidence`
+- `friday plan <goal...>`
+- `friday review --changed`
+- `friday run plan <goal...>` and `friday run review --changed`
+- `friday route`
+- `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
+- `friday usage [--since <duration|date>] [--group-by workflow|model] [--budget]`
+- `friday outcome <execution-id|latest> <accepted|retried|escalated|rejected>`
+- `friday execute <prompt-path> --provider local`
 
 ## Current Implemented Foundation
 
@@ -51,6 +69,7 @@ writes a result artefact and metadata-only usage record.
 - Local result artefacts and metadata-only usage history
 - Read-only local usage summaries with time filtering and workflow/model grouping
 - Versioned global/project hosted-cost budget policy with local reporting
+- Separate append-only developer outcomes with latest-event-wins summaries
 - Reasoning-aware workflow output allowances and one bounded context-safe retry
 - Live TTY-aware workflow progress and redacted assistant-response display
 - Vitest, TypeScript, Prettier, Fallow, and build checks
@@ -69,10 +88,13 @@ writes a result artefact and metadata-only usage record.
 - `friday local setup`, `friday doctor`, and `friday run` provide the guided path
   from model selection to an approved local result.
 - Local execution writes metadata-only usage records for successful and failed
-  attempts. `friday usage` reports recorded token totals and advisory cost without
-  exposing prompt or response content. `friday usage --budget` evaluates a
-  versioned current-project hosted-cost policy from that same history; hosted
-  providers and cross-project reporting remain planned.
+  attempts. `friday outcome` records a separate developer judgement in an
+  append-only outcome log; the latest event for an execution is the effective
+  outcome in `friday usage`. `friday usage` reports recorded token totals and
+  advisory cost without exposing prompt or response content. Its `--budget`
+  form evaluates a versioned current-project hosted-cost policy from execution
+  history. Budget evaluation and hosted preflight contracts are implemented,
+  but hosted providers and cross-project reporting remain planned.
 
 ## Post-MVP Work
 

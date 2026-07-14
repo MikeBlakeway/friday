@@ -172,6 +172,7 @@ friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 friday usage --since 7d
 friday usage --budget
+friday outcome <execution-id> accepted
 friday execute .friday/output/plan-prompt.md --provider local
 ```
 
@@ -245,6 +246,7 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] `friday route`
 - [x] `friday cost`
 - [x] `friday usage`
+- [x] `friday outcome`
 - [x] `friday execute`
 - [ ] `friday escalate` (post-MVP)
 
@@ -686,11 +688,12 @@ The current MVP direction is a local-provider workflow engine that can:
 6. estimate advisory usage cost
 7. create inspectable planning, review, cost, route, and evidence artefacts
 8. execute planning and review through a configured local model with approval
-9. record local result artefacts and metadata-only usage history
+9. record local result artefacts and metadata-only execution and outcome history
 
 MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
-`friday review`, `friday run`, `friday route`, `friday cost`, and the explicit
-local execution boundary `friday execute --provider local`. Post-MVP work
+`friday review`, `friday run`, `friday route`, `friday cost`, `friday usage`,
+`friday outcome`, and the explicit local execution boundary
+`friday execute --provider local`. Post-MVP work
 includes hosted provider execution, cross-project budget reporting, autonomous coding, and a
 richer cockpit UI.
 

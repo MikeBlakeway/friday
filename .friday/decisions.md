@@ -347,6 +347,8 @@ which global files were loaded or missing.
 
 ### 2026-07-13 — Record metadata-only local usage and outcomes
 
+**Status: Extended by separate outcome events and hosted-budget policy evaluation.**
+
 **Context**
 
 Advisory estimates alone cannot show how an actual local execution behaved, but
@@ -357,8 +359,9 @@ full prompt or response logging would duplicate sensitive project context.
 Append local success and failure metadata to
 `.friday/runtime/execution-log.jsonl`, including workflow, route, provider/model,
 timing, token usage, advisory cost, stop reason, error code, privacy classification,
-and optional developer outcome. Exclude raw prompts, secrets, hidden reasoning,
-and unredacted provider responses.
+and optional legacy developer outcome. Exclude raw prompts, secrets, hidden
+reasoning, and unredacted provider responses. Structured developer judgement now
+lives in the separate append-only outcome log.
 
 **Reasoning**
 
@@ -368,7 +371,9 @@ into published telemetry or a prompt replay store.
 **Trade-offs**
 
 The log is project-local and intentionally incomplete. Cross-project aggregate
-usage reporting, richer cost reports, and budget enforcement remain planned.
+usage reporting and richer cost reports remain planned. Hosted-budget evaluation
+is implemented, but runtime enforcement remains deferred until Friday invokes a
+hosted provider.
 
 ### 2026-07-14 — Validate execution-history schema before safety evaluation
 
@@ -387,6 +392,8 @@ partial write or manual edit must not create misleading totals or cause a later
 generic dereference failure.
 
 ### 2026-07-13 — Expose execution history through a read-only local summary
+
+**Status: Extended by outcome-log summaries and hosted-budget reporting.**
 
 **Context**
 
@@ -408,7 +415,8 @@ evidence for later budget policy without introducing telemetry or enforcement.
 **Trade-offs**
 
 The summary is project-local, advisory, and non-billing. Local-model financial
-cost may be zero; cross-project reporting and budget enforcement remain planned.
+cost may be zero; cross-project reporting remains planned. Hosted-budget policy
+evaluation now exists, while hosted execution-time enforcement remains deferred.
 
 ### 2026-07-14 — Record developer judgement as separate append-only events
 
@@ -511,6 +519,8 @@ run data from entering version control while retaining safe examples.
 Real execution history is local to each checkout and is not reproduced from Git.
 
 ### 2026-07-14 — Evaluate hosted financial budgets from existing local history
+
+**Status: Retained; evaluation and preflight are implemented, hosted invocation is deferred.**
 
 **Context**
 
