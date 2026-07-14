@@ -48,11 +48,13 @@ flowchart TD
   ExecutionOutputs --> CurrentUsage[Current: metadata-only usage history<br/>.friday/runtime/execution-log.jsonl]
   CurrentUsage --> OutcomeHistory[Current: structured outcome events<br/>.friday/runtime/outcome-log.jsonl]
   OutcomeHistory --> UsageSummary[Current: local summary<br/>friday usage]
+  CurrentUsage --> BudgetPolicy[Current: versioned hosted-cost policy<br/>global/project JSON]
+  BudgetPolicy --> BudgetSummary[Current: local budget state<br/>friday usage --budget]
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence
   Recommendation -.-> PlannedProviders[Planned: hosted provider integrations<br/>OpenAI, Anthropic, DeepSeek]
-  UsageSummary -.-> PlannedReporting[Planned: cross-project reporting<br/>richer cost reports and budget enforcement]
+  UsageSummary -.-> PlannedReporting[Planned: cross-project reporting<br/>and richer cost reports]
   PlannedProviders -.-> PlannedReporting
   PlannedReporting -.-> CostModel
   PlannedCockpit[Planned: richer cockpit UI] -.-> CLI
@@ -100,6 +102,8 @@ Hosted-provider execution remains planned and outside the current product.
   counts and built-in pricing.
 - `friday usage` reads metadata-only local execution history and reports recorded
   token totals, advisory cost, outcomes, and workflow/provider-model counts.
+  `friday usage --budget` evaluates current-project hosted usage against a
+  versioned global/project aggregate-cost policy without calling a provider.
 - `friday execute <prompt-path> --provider local` executes an existing generated
   prompt through the explicit local provider boundary and writes an inspectable
   execution result.
@@ -124,6 +128,9 @@ Hosted-provider execution remains planned and outside the current product.
   optional LM Studio local provider adapter.
 - `src/ai/usage/` owns the local execution log schema, append/read helpers, and
   summary helpers for workflow, provider/model, retry, and escalation counts.
+- `src/ai/budget/` owns versioned budget-policy parsing, restrictive global/project
+  resolution, history-backed hosted-cost evaluation, and preflight override
+  metadata contracts.
 
 ## Current Data Flow
 
@@ -169,6 +176,10 @@ token counts, then prints deterministic input, output, and total cost estimates.
 by completion time, and groups records by workflow or provider/model. It reports
 real recorded token usage alongside advisory cost totals without printing prompts,
 responses, secrets, or private snippets. A missing log is treated as empty history.
+With `--budget`, it reads the same history and optional global/project JSON policy
+files to report current calendar-month hosted usage, allowance, and policy status.
+This is a preflight contract for future hosted providers; current execution remains
+local-only.
 
 `friday run` is the convenience orchestration boundary. It prepares the normal
 plan or review prompt, resolves the configured or explicitly overridden LM
@@ -205,8 +216,9 @@ interactive confirmation or an explicit `--start-server` flag.
   redacted `*.example.md` artefacts may be committed as documentation.
 - Evidence providers are deterministic sources of facts, not AI providers.
 - Routing and cost estimation remain advisory around execution. Metadata-only
-  local usage logging and per-project summaries exist, but cross-project reporting
-  and budget enforcement do not.
+  local usage logging, per-project summaries, and versioned hosted-cost budget
+  policy evaluation exist, but cross-project reporting and hosted provider
+  execution do not.
 - Real model execution must stay behind privacy classification, secret
   detection, routing policy, cost policy, and explicit provider configuration.
 - LM Studio execution is optional and local-only. It is available through the
@@ -216,6 +228,6 @@ interactive confirmation or an explicit `--start-server` flag.
 
 ## Planned Architecture Work
 
-- Add cross-project reporting, richer cost reports, and budget enforcement on top
-  of implemented metadata-only local execution history and summaries.
+- Add cross-project reporting and richer cost reports on top of implemented
+  metadata-only local execution history, summaries, and budget policy.
 - Add hosted provider implementations behind the provider contracts.

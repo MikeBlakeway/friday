@@ -6,6 +6,10 @@ import type { AiUsageCostEstimate } from '../pricing/pricingModel.js'
 import type { PrivacyLevel } from '../routing/modelRouting.js'
 import type { AiRoute } from '../routing/modelRouting.js'
 import type { DeveloperOutcomeEvent } from './outcomeLog.js'
+import {
+  BUDGET_OVERRIDE_SCHEMA_VERSION,
+  type BudgetOverrideRecord,
+} from '../budget/hostedPreflight.js'
 
 export const EXECUTION_LOG_SCHEMA_VERSION = 1
 export const FRIDAY_RUNTIME_DIR = 'runtime'
@@ -70,6 +74,7 @@ export interface ExecutionLogRecord {
   }
   privacy: ExecutionLogPrivacy
   developerOutcome?: DeveloperOutcome
+  budgetOverride?: BudgetOverrideRecord
 }
 
 export interface ExecutionLogSummary {
@@ -129,6 +134,20 @@ function sanitizeDeveloperOutcome(
   }
 }
 
+function sanitizeBudgetOverride(
+  override: ExecutionLogRecord['budgetOverride'],
+): BudgetOverrideRecord | undefined {
+  if (override === undefined) {
+    return undefined
+  }
+
+  return {
+    schemaVersion: BUDGET_OVERRIDE_SCHEMA_VERSION,
+    reason: override.reason,
+    recordedAt: override.recordedAt,
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -139,6 +158,7 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
   const resultArtifact = pickOptionalString(input.result.artifact)
   const resultErrorCode = pickOptionalString(input.result.errorCode)
   const developerOutcome = sanitizeDeveloperOutcome(input.developerOutcome)
+  const budgetOverride = sanitizeBudgetOverride(input.budgetOverride)
   const record: ExecutionLogRecord = {
     schemaVersion: EXECUTION_LOG_SCHEMA_VERSION,
     id: input.id,
@@ -186,6 +206,10 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
 
   if (developerOutcome !== undefined) {
     record.developerOutcome = developerOutcome
+  }
+
+  if (budgetOverride !== undefined) {
+    record.budgetOverride = budgetOverride
   }
 
   return record
@@ -294,6 +318,22 @@ function assertExecutionLogRecord(
       ['accepted', 'retried', 'escalated', 'rejected'],
       lineNumber,
     )
+  }
+
+  if (value.budgetOverride !== undefined) {
+    const budgetOverride = assertNestedRecord(value, 'budgetOverride', lineNumber)
+    if (budgetOverride.schemaVersion !== BUDGET_OVERRIDE_SCHEMA_VERSION) {
+      throw new Error(
+        `Malformed execution log record at line ${lineNumber}: invalid budgetOverride.`,
+      )
+    }
+    assertAllowedString(
+      budgetOverride,
+      'reason',
+      ['warning-acknowledged', 'hard-limit'],
+      lineNumber,
+    )
+    assertRequiredString(budgetOverride, 'recordedAt', lineNumber)
   }
 }
 

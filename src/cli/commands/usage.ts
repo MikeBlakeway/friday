@@ -5,6 +5,12 @@ import {
   type ExecutionLogSummary,
 } from '../../ai/usage/executionLog.js'
 import { readDeveloperOutcomeEvents } from '../../ai/usage/outcomeLog.js'
+import {
+  evaluateHostedBudgetPolicy,
+  loadBudgetPolicies,
+  resolveEffectiveHostedBudgetPolicy,
+  type HostedBudgetPolicyResult,
+} from '../../ai/budget/budgetPolicy.js'
 
 type UsageGroupBy = 'workflow' | 'model'
 
@@ -12,11 +18,13 @@ export interface UsageCommandOptions {
   projectRoot: string
   args: string[]
   now?: Date
+  homeDir?: string
 }
 
 interface ParsedUsageArgs {
   groupBy?: UsageGroupBy
   since?: Date
+  budget?: true
 }
 
 function parseRequiredValue(args: string[], index: number, flag: string): string {
@@ -73,6 +81,7 @@ function parseSince(value: string, now: Date): Date {
 function parseUsageArgs(args: string[], now = new Date()): ParsedUsageArgs {
   let groupBy: UsageGroupBy | undefined
   let since: Date | undefined
+  let budget = false
 
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index]
@@ -93,6 +102,9 @@ function parseUsageArgs(args: string[], now = new Date()): ParsedUsageArgs {
         index += 1
         break
       }
+      case '--budget':
+        budget = true
+        break
       default:
         throw new Error(`Unknown usage option: ${String(flag)}.`)
     }
@@ -101,7 +113,28 @@ function parseUsageArgs(args: string[], now = new Date()): ParsedUsageArgs {
   return {
     ...(groupBy === undefined ? {} : { groupBy }),
     ...(since === undefined ? {} : { since }),
+    ...(budget ? { budget: true as const } : {}),
   }
+}
+
+function formatBudgetSummary(result: HostedBudgetPolicyResult): string {
+  return [
+    'Friday hosted budget',
+    `Policy source: ${result.source}`,
+    `Period: ${result.period.startedAt} to ${result.period.endsAt}`,
+    `Current hosted usage: ${result.currentUsage.toFixed(6)} ${result.currency}`,
+    `Estimated request cost: ${result.estimatedRequestCost.toFixed(6)} ${result.currency}`,
+    `Remaining allowance: ${
+      result.remainingAllowance === undefined
+        ? 'No hard limit configured'
+        : `${result.remainingAllowance.toFixed(6)} ${result.currency}`
+    }`,
+    `Status: ${result.status}`,
+    `Warning acknowledgement required: ${result.warningAcknowledgementRequired ? 'yes' : 'no'}`,
+    `Hard-limit override allowed: ${result.hardLimitOverrideAllowed ? 'yes' : 'no'}`,
+    'Reasons:',
+    ...result.reasons.map((reason) => `  - ${reason}`),
+  ].join('\n')
 }
 
 function filterRecordsSince(records: ExecutionLogRecord[], since?: Date): ExecutionLogRecord[] {
@@ -168,6 +201,23 @@ export async function runUsageCommand(options: UsageCommandOptions): Promise<voi
     readExecutionLogRecords(options.projectRoot),
     readDeveloperOutcomeEvents(options.projectRoot),
   ])
+
+  if (parsed.budget) {
+    const policies = await loadBudgetPolicies({
+      projectRoot: options.projectRoot,
+      ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
+    })
+    const effectivePolicy = resolveEffectiveHostedBudgetPolicy(policies)
+    const budget = evaluateHostedBudgetPolicy({
+      records,
+      policies,
+      estimatedRequestCost: 0,
+      currency: effectivePolicy?.currency ?? 'USD',
+      ...(options.now === undefined ? {} : { now: options.now }),
+    })
+    console.log(formatBudgetSummary(budget))
+    return
+  }
 
   if (records.length === 0) {
     console.log('Friday usage')

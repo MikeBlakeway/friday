@@ -2,7 +2,7 @@
 
 ## Backlog
 
-- [ ] Add post-MVP cross-project usage reporting and budget policy.
+- [ ] Add post-MVP cross-project aggregate usage and budget reporting.
 - [ ] Add hosted-provider execution behind privacy, secret, routing, and cost
       gates.
 
@@ -64,12 +64,15 @@
       usage summary with time filtering and workflow/model grouping.
 - [x] FRI-062: record structured developer outcomes as local append-only events
       with safe targeting, deterministic supersession, and usage counts.
+- [x] FRI-063: add a versioned hosted-cost budget policy and current-project
+      reporting from existing metadata-only execution history. Keep hosted
+      provider execution deferred behind the resulting privacy and cost gates.
 
 ## Later
 
 - [ ] Integrate hosted providers only behind privacy, secret-detection, and
       cost-policy gates.
-- [ ] Add budgets and aggregate cost reports by task, provider, and model.
+- [ ] Add cross-project budgets and aggregate cost reports by task, provider, and model.
 - [ ] Add repeatable refactoring and shipping workflows.
 - [ ] Explore a richer local cockpit interface once the CLI engine is proven.
 - [ ] Explore voice interaction only after the core workflows are stable and useful.

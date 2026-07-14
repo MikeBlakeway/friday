@@ -195,6 +195,24 @@ describe('execution log', () => {
     ])
   })
 
+  it('records a structured budget override without storing prompt or secret content', async () => {
+    const projectRoot = await createTempProject()
+    const record = createRecord({
+      budgetOverride: {
+        schemaVersion: 1,
+        reason: 'hard-limit',
+        recordedAt: '2026-07-14T10:00:00.000Z',
+      },
+    })
+
+    await appendExecutionLogRecord(projectRoot, record)
+
+    await expect(readExecutionLogRecords(projectRoot)).resolves.toEqual([record])
+    await expect(readFile(getExecutionLogPath(projectRoot), 'utf8')).resolves.not.toContain(
+      'OPENAI_API_KEY',
+    )
+  })
+
   it('summarises workflows, provider/models, retries, and escalations', () => {
     const summary = summariseExecutionLogRecords([
       createRecord({

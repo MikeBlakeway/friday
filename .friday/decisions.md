@@ -470,3 +470,32 @@ run data from entering version control while retaining safe examples.
 **Trade-offs**
 
 Real execution history is local to each checkout and is not reproduced from Git.
+
+### 2026-07-14 — Evaluate hosted financial budgets from existing local history
+
+**Context**
+
+Future hosted providers need an explicit spend boundary, but Friday must not add
+provider billing APIs, another usage store, or a cost override that could weaken
+privacy and secret safety.
+
+**Decision**
+
+Use versioned global and project `budget-policy.json` files to define an
+aggregate calendar-month hosted-cost warning and/or hard limit. Read the existing
+`.friday/runtime/execution-log.jsonl` history, merge both layers to the stricter
+ceiling, and surface the current-project state through `friday usage --budget`.
+Model warning acknowledgement and permitted hard-limit overrides as structured,
+metadata-only preflight results for a future hosted invocation.
+
+**Reasoning**
+
+This reuses the history developers can already inspect, keeps local execution
+outside hosted financial policy, and makes future spend decisions testable before
+credentials or external provider calls are introduced.
+
+**Trade-offs**
+
+Advisory pricing is not a billing record, reporting remains per project, and the
+current CLI has no hosted provider to enforce at runtime. Privacy and secret
+blocks remain independent and stronger than any cost override.

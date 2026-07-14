@@ -17,11 +17,12 @@
   execution is an explicit additional step.
 - Routing, privacy classification, secret detection, provider contracts, advisory
   cost estimation, `friday cost`, and opt-in local evidence collection are
-  implemented, alongside LM Studio setup, diagnostics, local execution, and
-  metadata-only usage logging, and read-only per-project usage summaries. Do not
-  claim hosted-provider execution, API-key loading, published telemetry,
-  cross-project aggregation, richer cost reports, or budget enforcement until
-  those paths exist.
+  implemented, alongside LM Studio setup, diagnostics, local execution,
+  metadata-only usage logging, read-only per-project usage summaries, and a
+  versioned hosted-cost budget preflight/reporting contract. Do not claim
+  hosted-provider execution, API-key loading, published telemetry, cross-project
+  aggregation, richer cost reports, or provider billing integration until those
+  paths exist.
 - Keep generated artefacts under `.friday/output/`, `.friday/evidence/`, and
   `.friday/runtime/` distinct from human-curated project memory. Ignore live run
   output and commit only deliberately curated, redacted `*.example.md` artefacts.
