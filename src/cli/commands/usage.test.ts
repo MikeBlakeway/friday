@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -75,6 +75,7 @@ async function captureUsageOutput(options: {
   projectRoot: string
   args?: string[]
   now?: Date
+  homeDir?: string
 }): Promise<string> {
   const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
@@ -83,6 +84,7 @@ async function captureUsageOutput(options: {
       projectRoot: options.projectRoot,
       args: options.args ?? [],
       ...(options.now === undefined ? {} : { now: options.now }),
+      ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
     })
     return log.mock.calls.map((call) => call.join(' ')).join('\n')
   } finally {
@@ -233,5 +235,52 @@ describe('runUsageCommand', () => {
     await expect(runUsageCommand({ projectRoot, args: [] })).rejects.toThrow(
       'Malformed execution log record at line 2: invalid JSON.',
     )
+  })
+
+  it('reports aggregate hosted budget state from the existing execution log', async () => {
+    const projectRoot = await createTempProject()
+    await mkdir(path.join(projectRoot, '.friday'), { recursive: true })
+    await writeFile(
+      path.join(projectRoot, '.friday', 'budget-policy.json'),
+      `${JSON.stringify({
+        schemaVersion: 1,
+        period: 'calendar-month',
+        currency: 'USD',
+        aggregateHostedCost: { warningThreshold: 1, hardLimit: 2 },
+      })}\n`,
+      'utf8',
+    )
+    await appendExecutionLogRecord(
+      projectRoot,
+      createRecord({
+        chosenRoute: {
+          ...localRoute,
+          decision: 'use-strong-hosted',
+          provider: 'deepseek',
+          modelTier: 'strong-hosted',
+          model: 'deepseek-v4-pro',
+        },
+        provider: 'deepseek',
+        model: 'deepseek-v4-pro',
+        costEstimate: {
+          ...createRecord().costEstimate,
+          provider: 'deepseek',
+          model: 'deepseek-v4-pro',
+          estimatedTotalCost: 1.25,
+        },
+      }),
+    )
+
+    const output = await captureUsageOutput({
+      projectRoot,
+      args: ['--budget'],
+      now: new Date('2026-07-12T12:00:00.000Z'),
+    })
+
+    expect(output).toContain('Friday hosted budget')
+    expect(output).toContain('Policy source: project')
+    expect(output).toContain('Current hosted usage: 1.250000 USD')
+    expect(output).toContain('Status: warning')
+    expect(output).toContain('Warning acknowledgement required: yes')
   })
 })

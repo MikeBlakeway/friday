@@ -51,7 +51,11 @@ hosted provider execution is not.
   bounded context-safe retry for an implicit ceiling, writes local results, and
   appends metadata-only success or failure records without prompts or hidden
   reasoning. Read-only usage reporting totals recorded tokens and advisory cost,
-  filters by completion time, and groups by workflow or provider/model.
+  filters by completion time, groups by workflow or provider/model, and reports
+  current-project hosted-cost budget state from the same history.
+- **Hosted budget policy** — parses versioned global and project JSON policies,
+  resolves the stricter ceiling, evaluates calendar-month advisory hosted usage,
+  and defines acknowledgement/override metadata for a future hosted preflight.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
   `.friday/output/review-prompt.md` so they are inspectable before any model use;
@@ -122,7 +126,8 @@ hosted provider execution is not.
    usage-domain helper.
 2. An optional `--since` filter selects records by completion time.
 3. The shared summary helper totals real recorded tokens, advisory cost, results,
-   retries, escalations, workflows, and provider/models.
+   retries, escalations, workflows, and provider/models. `--budget` instead
+   evaluates hosted routes in the same history against optional policy files.
 4. The command prints metadata only and never mutates history or displays prompts,
    responses, secrets, or private snippets.
 
@@ -151,7 +156,7 @@ hosted provider execution is not.
 
 - Add hosted provider implementations behind the existing interfaces and safety
   gates; local LM Studio execution is already implemented.
-- Add budget policy, richer cost reports, and cross-project aggregation on top of
-  existing local usage logging and per-project summaries.
+- Add richer cost reports and cross-project aggregation on top of existing local
+  usage logging, per-project summaries, and hosted budget policy.
 - Add repeatable brainstorming, specification, refactoring, and escalation
   workflows built on the same core memory and evidence boundaries.

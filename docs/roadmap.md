@@ -21,6 +21,7 @@ friday run review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 friday usage --since 7d
+friday usage --budget
 ```
 
 Preparation commands gather local project context, write deterministic evidence,
@@ -49,6 +50,7 @@ writes a result artefact and metadata-only usage record.
 - One-command local plan and changed-file review execution
 - Local result artefacts and metadata-only usage history
 - Read-only local usage summaries with time filtering and workflow/model grouping
+- Versioned global/project hosted-cost budget policy with local reporting
 - Reasoning-aware workflow output allowances and one bounded context-safe retry
 - Live TTY-aware workflow progress and redacted assistant-response display
 - Vitest, TypeScript, Prettier, Fallow, and build checks
@@ -68,12 +70,13 @@ writes a result artefact and metadata-only usage record.
   from model selection to an approved local result.
 - Local execution writes metadata-only usage records for successful and failed
   attempts. `friday usage` reports recorded token totals and advisory cost without
-  exposing prompt or response content. Cross-project reporting and budget
-  enforcement remain planned.
+  exposing prompt or response content. `friday usage --budget` evaluates a
+  versioned current-project hosted-cost policy from that same history; hosted
+  providers and cross-project reporting remain planned.
 
 ## Post-MVP Work
 
-- Cross-project aggregate usage reporting, richer cost reports, and budget enforcement
+- Cross-project aggregate usage reporting and richer cost reports
 - Hosted provider implementations
 - Explicit premium escalation and approval flow
 - Brainstorm, spec, design, refactor, and ship workflows

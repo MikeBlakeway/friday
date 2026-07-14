@@ -171,6 +171,7 @@ friday review --changed
 friday route ...
 friday cost --provider deepseek --model deepseek-v4-flash --input-tokens 12000 --output-tokens 3000
 friday usage --since 7d
+friday usage --budget
 friday execute .friday/output/plan-prompt.md --provider local
 ```
 
@@ -226,9 +227,10 @@ Friday is currently in early development. The initial focus is on the core engin
 - [x] Metadata-only local token usage logging
 - [x] Advisory cost estimates recorded from real local usage
 - [x] Read-only local usage summaries by workflow and provider/model
+- [x] Versioned hosted-cost budget policy and current-project budget reporting
 - [ ] Cross-project aggregate usage reporting (post-MVP)
 - [ ] Richer cost reports (post-MVP)
-- [ ] Budget rules (post-MVP)
+- [ ] Cross-project aggregate budget reporting (post-MVP)
 
 ### Developer Workflows
 
@@ -311,6 +313,14 @@ hidden reasoning or raw provider responses. `friday cost` provides an advisory
 local estimate from configured provider/model pricing and estimated token counts,
 while brainstorming, specification, hosted provider execution, and explicit
 escalation commands remain post-MVP.
+
+Friday also has a versioned, local hosted-cost budget policy for future external
+provider execution. It reads the existing metadata-only execution log, keeps
+local LM Studio runs outside hosted financial limits, combines global and
+project ceilings toward the stricter policy, and makes warning acknowledgements
+or permitted hard-limit overrides auditable. See
+[hosted budget policy](./docs/hosted-budget-policy.md). Hosted providers remain
+unimplemented.
 
 The goal is not to replace the developer’s judgement. The goal is to reduce
 friction, preserve context, manage cost, and make AI-assisted development easier
@@ -624,7 +634,7 @@ Implemented CLI commands:
 - `friday run review --changed [--yes] [--provider lm-studio] [--model <id>] [--display-max-lines <n>] [--display-max-chars <n>]`
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
-- `friday usage [--since <duration|date>] [--group-by workflow|model]`
+- `friday usage [--since <duration|date>] [--group-by workflow|model] [--budget]`
 - `friday outcome <execution-id|latest> <accepted|retried|escalated|rejected>`
 - `friday execute <prompt-path> --provider local [--display-max-lines <n>] [--display-max-chars <n>]`
 
@@ -643,9 +653,10 @@ advisory estimates. These estimates are not billing records and should be
 treated as planning guidance rather than billing records. Local execution writes
 real token usage and advisory estimates to metadata-only project history.
 `friday usage` reads that local history and reports deterministic totals with
-optional time filtering and grouping. Local-model financial cost may be zero;
-cross-project reporting, richer cost reports, and budget enforcement remain
-planned, and Friday does not publish telemetry.
+optional time filtering and grouping. `friday usage --budget` reports the
+current-project hosted-cost policy state from the same history. Local-model
+financial cost may be zero; cross-project reporting and richer cost reports
+remain planned, and Friday does not publish telemetry.
 
 Friday now includes a deterministic privacy safety gate for future AI provider
 integrations. It classifies prompt or project context as public, internal,
@@ -679,7 +690,7 @@ The current MVP direction is a local-provider workflow engine that can:
 MVP-critical commands are `friday init`, `friday evidence`, `friday plan`,
 `friday review`, `friday run`, `friday route`, `friday cost`, and the explicit
 local execution boundary `friday execute --provider local`. Post-MVP work
-includes hosted provider execution, budget reporting, autonomous coding, and a
+includes hosted provider execution, cross-project budget reporting, autonomous coding, and a
 richer cockpit UI.
 
 ---
@@ -725,6 +736,7 @@ Future possibilities:
 - [x] Built-in advisory model pricing
 - [x] Local metadata-only usage logging
 - [x] Read-only local usage summary command
+- [x] Versioned hosted-cost budget policy and local budget reporting
 - [x] Explicit append-only developer outcome recording
 - [x] Advisory cost estimation CLI
 

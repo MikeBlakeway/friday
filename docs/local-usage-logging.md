@@ -20,6 +20,7 @@ Each line is a versioned JSON record. Schema version `1` captures:
 - safe provider failure details such as error code and finish reason
 - privacy level, blocked state, and whether a secret was detected
 - optional legacy developer outcome status from schema version `1`
+- optional structured hosted-budget acknowledgement or hard-limit override metadata
 
 The log remains local. Friday does not upload, synchronise, or send it to an analytics service.
 
@@ -76,6 +77,7 @@ friday usage
 friday usage --since 24h
 friday usage --since 2026-07-01 --group-by workflow
 friday usage --group-by model
+friday usage --budget
 ```
 
 `--since` accepts a positive duration using `m`, `h`, `d`, or `w`, or a date
@@ -100,3 +102,8 @@ A missing log is an empty history, not an error. The command never prints raw
 prompts, model responses, secret values, or private snippets because those fields
 are not part of the execution-log schema. Advisory cost is not a billing record;
 local-model financial cost may correctly be zero.
+
+`friday usage --budget` uses this same execution history to report the current
+calendar-month hosted-cost policy state. Local execution records do not consume
+the hosted financial budget. See [hosted budget policy](./hosted-budget-policy.md)
+for versioned configuration, precedence, acknowledgement, and override rules.

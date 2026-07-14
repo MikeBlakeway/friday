@@ -22,7 +22,7 @@ Preparation and inspection (no model call):
   evidence     Prepare evidence; add --collect to run deterministic providers
   plan         Create a planning prompt artefact from project memory
   review       Create a review prompt artefact from changed-file context
-  usage        Summarise local execution history; filter with --since or --group-by
+  usage        Summarise local execution history; add --budget for hosted cost policy state
   outcome      Record accepted, retried, escalated, or rejected for an execution
 
 Execution:
