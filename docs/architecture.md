@@ -46,7 +46,8 @@ flowchart TD
   ExecuteBoundary --> CurrentLocalProvider[Current: optional LM Studio adapter<br/>behind provider contract]
   ExecuteBoundary --> ExecutionOutputs[Current: inspectable execution results<br/>.friday/output/executions/*]
   ExecutionOutputs --> CurrentUsage[Current: metadata-only usage history<br/>.friday/runtime/execution-log.jsonl]
-  CurrentUsage --> UsageSummary[Current: read-only local summary<br/>friday usage]
+  CurrentUsage --> OutcomeHistory[Current: structured outcome events<br/>.friday/runtime/outcome-log.jsonl]
+  OutcomeHistory --> UsageSummary[Current: local summary<br/>friday usage]
 
   CLI --> CurrentCollectors[Current: opt-in evidence collectors<br/>Git, TypeScript, tests, Fallow]
   CurrentCollectors --> CurrentEvidence

@@ -8,6 +8,7 @@ import { runGlobalInitCommand } from './commands/globalInit.js'
 import { runHelpCommand } from './commands/help.js'
 import { runInitCommand } from './commands/init.js'
 import { runLocalSetupCommand } from './commands/localSetup.js'
+import { runOutcomeCommand } from './commands/outcome.js'
 import { runPlanCommand } from './commands/plan.js'
 import { runReviewCommand } from './commands/review.js'
 import { runWorkflowCommand } from './commands/run.js'
@@ -51,6 +52,9 @@ async function main(): Promise<void> {
       return
     case 'usage':
       await runUsageCommand({ projectRoot, args: process.argv.slice(3) })
+      return
+    case 'outcome':
+      await runOutcomeCommand({ projectRoot, args: process.argv.slice(3) })
       return
     case 'doctor': {
       const report = await runDoctorCommand({ projectRoot, args: process.argv.slice(3) })

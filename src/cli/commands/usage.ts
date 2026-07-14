@@ -4,6 +4,7 @@ import {
   type ExecutionLogRecord,
   type ExecutionLogSummary,
 } from '../../ai/usage/executionLog.js'
+import { readDeveloperOutcomeEvents } from '../../ai/usage/outcomeLog.js'
 
 type UsageGroupBy = 'workflow' | 'model'
 
@@ -147,6 +148,7 @@ function formatUsageSummary(summary: ExecutionLogSummary, options: ParsedUsageAr
     'Advisory costs are estimates, not billing records; local-model financial cost may be zero.',
     `Retries: ${summary.retried}`,
     `Escalations: ${summary.escalated}`,
+    ...formatCounts('Developer outcomes', summary.developerOutcomes),
   ]
 
   if (options.groupBy === undefined || options.groupBy === 'workflow') {
@@ -162,7 +164,10 @@ function formatUsageSummary(summary: ExecutionLogSummary, options: ParsedUsageAr
 
 export async function runUsageCommand(options: UsageCommandOptions): Promise<void> {
   const parsed = parseUsageArgs(options.args, options.now)
-  const records = await readExecutionLogRecords(options.projectRoot)
+  const [records, outcomeEvents] = await Promise.all([
+    readExecutionLogRecords(options.projectRoot),
+    readDeveloperOutcomeEvents(options.projectRoot),
+  ])
 
   if (records.length === 0) {
     console.log('Friday usage')
@@ -180,5 +185,7 @@ export async function runUsageCommand(options: UsageCommandOptions): Promise<voi
     return
   }
 
-  console.log(formatUsageSummary(summariseExecutionLogRecords(filteredRecords), parsed))
+  console.log(
+    formatUsageSummary(summariseExecutionLogRecords(filteredRecords, outcomeEvents), parsed),
+  )
 }

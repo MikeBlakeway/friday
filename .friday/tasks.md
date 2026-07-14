@@ -62,6 +62,8 @@
       the successful Friday-on-Friday local planning run.
 - [x] FRI-061: expose metadata-only execution history through a read-only local
       usage summary with time filtering and workflow/model grouping.
+- [x] FRI-062: record structured developer outcomes as local append-only events
+      with safe targeting, deterministic supersession, and usage counts.
 
 ## Later
 

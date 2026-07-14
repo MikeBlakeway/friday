@@ -23,6 +23,7 @@ Preparation and inspection (no model call):
   plan         Create a planning prompt artefact from project memory
   review       Create a review prompt artefact from changed-file context
   usage        Summarise local execution history; filter with --since or --group-by
+  outcome      Record accepted, retried, escalated, or rejected for an execution
 
 Execution:
   run          Prepare and execute a plan or review with the configured local provider

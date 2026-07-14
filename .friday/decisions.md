@@ -394,6 +394,34 @@ evidence for later budget policy without introducing telemetry or enforcement.
 The summary is project-local, advisory, and non-billing. Local-model financial
 cost may be zero; cross-project reporting and budget enforcement remain planned.
 
+### 2026-07-14 — Record developer judgement as separate append-only events
+
+**Context**
+
+A successful provider response only proves that execution completed. It does not
+show whether the developer accepted the result, retried it, escalated it, or
+rejected it, and adding free text would expand the privacy surface.
+
+**Decision**
+
+Add `friday outcome <execution-id|latest> <status>` with four structured statuses
+and no free-text reason. Store versioned events in
+`.friday/runtime/outcome-log.jsonl`, require exact identifiers in non-interactive
+use, and confirmation-gate `latest` after displaying its execution metadata.
+Later events supersede the effective usage-summary value without rewriting or
+deleting earlier history.
+
+**Reasoning**
+
+Separate events preserve auditability and keep developer judgement distinct from
+provider execution status while retaining Friday's metadata-only privacy boundary.
+
+**Trade-offs**
+
+The first version cannot explain why an outcome was chosen or link retries and
+escalations to a subsequent execution. Those relationships can be added later as
+structured fields if they prove useful without weakening privacy defaults.
+
 ### 2026-07-13 — Use reasoning-aware allowances and one bounded adaptive retry
 
 **Context**

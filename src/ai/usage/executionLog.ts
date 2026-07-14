@@ -5,6 +5,7 @@ import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import type { AiUsageCostEstimate } from '../pricing/pricingModel.js'
 import type { PrivacyLevel } from '../routing/modelRouting.js'
 import type { AiRoute } from '../routing/modelRouting.js'
+import type { DeveloperOutcomeEvent } from './outcomeLog.js'
 
 export const EXECUTION_LOG_SCHEMA_VERSION = 1
 export const FRIDAY_RUNTIME_DIR = 'runtime'
@@ -367,8 +368,22 @@ function increment(counts: Record<string, number>, key: string): void {
   counts[key] = (counts[key] ?? 0) + 1
 }
 
-export function summariseExecutionLogRecords(records: ExecutionLogRecord[]): ExecutionLogSummary {
+export function summariseExecutionLogRecords(
+  records: ExecutionLogRecord[],
+  outcomeEvents: DeveloperOutcomeEvent[] = [],
+): ExecutionLogSummary {
   const summary = createEmptySummary()
+  const effectiveOutcomes = new Map<string, DeveloperOutcomeStatus>()
+
+  records.forEach((record) => {
+    if (record.developerOutcome !== undefined) {
+      effectiveOutcomes.set(record.id, record.developerOutcome.status)
+    }
+  })
+
+  outcomeEvents.forEach((event) => {
+    effectiveOutcomes.set(event.executionId, event.status)
+  })
 
   records.forEach((record) => {
     summary.totalRecords += 1
@@ -381,17 +396,30 @@ export function summariseExecutionLogRecords(records: ExecutionLogRecord[]): Exe
     summary.advisoryCostByCurrency[record.costEstimate.currency] =
       (summary.advisoryCostByCurrency[record.costEstimate.currency] ?? 0) +
       record.costEstimate.estimatedTotalCost
+  })
 
-    if (record.developerOutcome?.status === 'retried') {
+  const countedExecutionIds = new Set<string>()
+
+  records.forEach((record) => {
+    if (countedExecutionIds.has(record.id)) {
+      return
+    }
+
+    countedExecutionIds.add(record.id)
+    const status = effectiveOutcomes.get(record.id)
+
+    if (status === undefined) {
+      return
+    }
+
+    summary.developerOutcomes[status] += 1
+
+    if (status === 'retried') {
       summary.retried += 1
     }
 
-    if (record.developerOutcome?.status === 'escalated') {
+    if (status === 'escalated') {
       summary.escalated += 1
-    }
-
-    if (record.developerOutcome !== undefined) {
-      summary.developerOutcomes[record.developerOutcome.status] += 1
     }
   })
 

@@ -15,6 +15,7 @@ import {
   summariseExecutionLogRecords,
   type ExecutionLogRecord,
 } from './executionLog.js'
+import { createDeveloperOutcomeEvent } from './outcomeLog.js'
 
 const tempDirs: string[] = []
 
@@ -265,6 +266,39 @@ describe('execution log', () => {
         escalated: 1,
         rejected: 0,
       },
+    })
+  })
+
+  it('counts only the latest append-only outcome for each execution', () => {
+    const summary = summariseExecutionLogRecords(
+      [createRecord({ id: 'exec-1' }), createRecord({ id: 'exec-2' })],
+      [
+        createDeveloperOutcomeEvent({
+          id: 'outcome-1',
+          executionId: 'exec-1',
+          status: 'retried',
+          recordedAt: '2026-07-14T09:00:00.000Z',
+        }),
+        createDeveloperOutcomeEvent({
+          id: 'outcome-2',
+          executionId: 'exec-1',
+          status: 'accepted',
+          recordedAt: '2026-07-14T09:05:00.000Z',
+        }),
+        createDeveloperOutcomeEvent({
+          id: 'outcome-3',
+          executionId: 'missing',
+          status: 'rejected',
+          recordedAt: '2026-07-14T09:10:00.000Z',
+        }),
+      ],
+    )
+
+    expect(summary.developerOutcomes).toEqual({
+      accepted: 1,
+      retried: 0,
+      escalated: 0,
+      rejected: 0,
     })
   })
 })
