@@ -47,7 +47,10 @@ future hosted invocation and state how to repair the policy.
 
 The global policy is a ceiling, not a default a project can silently relax.
 When both files exist, Friday takes the lower configured warning threshold and
-hard limit. Both policies must use the same currency and period. A hard-limit
+hard limit. If a warning inherited from either layer would exceed the stricter
+hard limit, Friday clamps the effective warning to that hard limit. This keeps
+two individually valid policies deterministic while never weakening either
+ceiling. Both policies must use the same currency and period. A hard-limit
 override is allowed only when every policy defining a hard limit explicitly
 permits it; omitting that flag is restrictive.
 
@@ -72,7 +75,11 @@ friday usage --budget
 ```
 
 It reports the applicable policy source, calendar period, hosted usage,
-remaining allowance, policy state, and reasons. A missing policy is displayed
-with actionable guidance; a future hosted preflight will refuse invocation until
-one is configured. The current CLI still executes only local LM Studio providers;
-the hosted preflight contract will be used before any future external invocation.
+remaining allowance, policy state, and reasons. `--budget` always uses the
+current UTC calendar month, so it rejects `--since` and `--group-by` rather than
+silently ignoring them. A missing policy has an `unconfigured` status with
+actionable guidance; a future hosted preflight will refuse invocation until one
+is configured. If projected usage exceeds a hard limit, remaining allowance is
+shown as zero and the excess is reported separately as overage. The current CLI
+still executes only local LM Studio providers; the hosted preflight contract will
+be used before any future external invocation.

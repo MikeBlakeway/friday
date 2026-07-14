@@ -154,6 +154,64 @@ describe('hosted budget policy', () => {
     })
   })
 
+  it.each([
+    {
+      name: 'clamps a global warning to a stricter project hard limit',
+      global: { warningThreshold: 80, hardLimit: 100 },
+      project: { hardLimit: 50 },
+      expected: { warningThreshold: 50, hardLimit: 50 },
+    },
+    {
+      name: 'clamps a project warning to a stricter global hard limit',
+      global: { hardLimit: 50 },
+      project: { warningThreshold: 80, hardLimit: 100 },
+      expected: { warningThreshold: 50, hardLimit: 50 },
+    },
+    {
+      name: 'keeps a warning below a hard limit when each layer supplies one threshold',
+      global: { warningThreshold: 20 },
+      project: { hardLimit: 50 },
+      expected: { warningThreshold: 20, hardLimit: 50 },
+    },
+    {
+      name: 'uses the lower warning and hard limit from mixed policies',
+      global: { warningThreshold: 40, hardLimit: 70 },
+      project: { warningThreshold: 30, hardLimit: 60 },
+      expected: { warningThreshold: 30, hardLimit: 60 },
+    },
+  ])('$name', ({ global, project, expected }) => {
+    const effective = resolveEffectiveHostedBudgetPolicy({
+      global: policy({ aggregateHostedCost: global }),
+      project: policy({ aggregateHostedCost: project }),
+    })
+
+    expect(effective).toMatchObject({ source: 'global-and-project', ...expected })
+  })
+
+  it('reports an unconfigured state and never presents an overage as remaining allowance', () => {
+    const unconfigured = evaluateHostedBudgetPolicy({
+      records: [],
+      policies: {},
+      estimatedRequestCost: 0,
+      currency: 'USD',
+      now: new Date('2026-07-14T12:00:00.000Z'),
+    })
+    const exceeded = evaluateHostedBudgetPolicy({
+      records: [record()],
+      policies: { project: policy({ aggregateHostedCost: { hardLimit: 2 } }) },
+      estimatedRequestCost: 0,
+      currency: 'USD',
+      now: new Date('2026-07-14T12:00:00.000Z'),
+    })
+
+    expect(unconfigured.status).toBe('unconfigured')
+    expect(exceeded).toMatchObject({
+      status: 'blocked',
+      remainingAllowance: 0,
+      overage: 1,
+    })
+  })
+
   it('requires explicit warning acknowledgement, records permitted hard-limit overrides, and never weakens privacy blocks', () => {
     const warning = evaluateHostedExecutionBudgetPreflight({
       records: [record()],

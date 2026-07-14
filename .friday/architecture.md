@@ -54,8 +54,9 @@ hosted provider execution is not.
   filters by completion time, groups by workflow or provider/model, and reports
   current-project hosted-cost budget state from the same history.
 - **Hosted budget policy** — parses versioned global and project JSON policies,
-  resolves the stricter ceiling, evaluates calendar-month advisory hosted usage,
-  and defines acknowledgement/override metadata for a future hosted preflight.
+  resolves restrictive thresholds deterministically, evaluates calendar-month
+  advisory hosted usage, and defines acknowledgement/override metadata for a
+  future hosted preflight.
 - **Generated output** — stores planning prompts under
   `.friday/output/plan-prompt.md` and review prompts under
   `.friday/output/review-prompt.md` so they are inspectable before any model use;

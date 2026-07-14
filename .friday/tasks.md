@@ -67,6 +67,9 @@
 - [x] FRI-063: add a versioned hosted-cost budget policy and current-project
       reporting from existing metadata-only execution history. Keep hosted
       provider execution deferred behind the resulting privacy and cost gates.
+- [x] FRI-068: harden hosted-budget policy merging and fixed-period reporting so
+      inherited thresholds remain restrictive, unconfigured and over-limit states
+      are explicit, and ignored budget-report options fail clearly.
 
 ## Later
 
