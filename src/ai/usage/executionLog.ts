@@ -48,6 +48,17 @@ export interface ExecutionLogCostEstimate extends Pick<
   | 'basis'
 > {}
 
+/**
+ * Metadata-only relationship between one logical workflow run and its provider
+ * attempts. It is optional so version-1 records written before this field was
+ * introduced remain readable.
+ */
+export interface ProviderExecutionAttempt {
+  workflowExecutionId: string
+  attempt: number
+  adaptiveRetry: boolean
+}
+
 export interface DeveloperOutcome {
   status: DeveloperOutcomeStatus
   note?: string
@@ -73,19 +84,21 @@ export interface ExecutionLogRecord {
     errorCode?: string
   }
   privacy: ExecutionLogPrivacy
+  providerAttempt?: ProviderExecutionAttempt
   developerOutcome?: DeveloperOutcome
   budgetOverride?: BudgetOverrideRecord
 }
 
 export interface ExecutionLogSummary {
   totalRecords: number
+  workflowRuns: number
+  providerAttempts: number
   byWorkflow: Record<string, number>
   byProviderModel: Record<string, number>
   byResultStatus: Record<ExecutionResultStatus, number>
   tokenUsage: ExecutionLogTokenUsage
   advisoryCostByCurrency: Record<string, number>
-  retried: number
-  escalated: number
+  adaptiveRetries: number
   developerOutcomes: Record<DeveloperOutcomeStatus, number>
 }
 
@@ -134,6 +147,20 @@ function sanitizeDeveloperOutcome(
   }
 }
 
+function sanitizeProviderAttempt(
+  providerAttempt: ExecutionLogRecord['providerAttempt'],
+): ProviderExecutionAttempt | undefined {
+  if (providerAttempt === undefined) {
+    return undefined
+  }
+
+  return {
+    workflowExecutionId: providerAttempt.workflowExecutionId,
+    attempt: providerAttempt.attempt,
+    adaptiveRetry: providerAttempt.adaptiveRetry,
+  }
+}
+
 function sanitizeBudgetOverride(
   override: ExecutionLogRecord['budgetOverride'],
 ): BudgetOverrideRecord | undefined {
@@ -157,6 +184,7 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
   const resultStopReason = pickOptionalString(input.result.stopReason)
   const resultArtifact = pickOptionalString(input.result.artifact)
   const resultErrorCode = pickOptionalString(input.result.errorCode)
+  const providerAttempt = sanitizeProviderAttempt(input.providerAttempt)
   const developerOutcome = sanitizeDeveloperOutcome(input.developerOutcome)
   const budgetOverride = sanitizeBudgetOverride(input.budgetOverride)
   const record: ExecutionLogRecord = {
@@ -202,6 +230,10 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
 
   if (resultErrorCode !== undefined) {
     record.result.errorCode = resultErrorCode
+  }
+
+  if (providerAttempt !== undefined) {
+    record.providerAttempt = providerAttempt
   }
 
   if (developerOutcome !== undefined) {
@@ -349,6 +381,27 @@ function assertTokenUsage(value: unknown, fieldName: string, lineNumber: number)
   }
 }
 
+function assertProviderAttempt(value: unknown, lineNumber: number): void {
+  const providerAttempt = assertRecord(value, 'providerAttempt', lineNumber)
+  assertNonEmptyString(
+    providerAttempt.workflowExecutionId,
+    'providerAttempt.workflowExecutionId',
+    lineNumber,
+  )
+  assertFiniteNonNegativeNumber(
+    providerAttempt.attempt,
+    'providerAttempt.attempt',
+    lineNumber,
+    true,
+  )
+
+  if (providerAttempt.attempt < 1) {
+    invalidField(lineNumber, 'providerAttempt.attempt')
+  }
+
+  assertBoolean(providerAttempt.adaptiveRetry, 'providerAttempt.adaptiveRetry', lineNumber)
+}
+
 function assertCostEstimate(value: unknown, lineNumber: number): void {
   const costEstimate = assertRecord(value, 'costEstimate', lineNumber)
   assertNonEmptyString(costEstimate.provider, 'costEstimate.provider', lineNumber)
@@ -439,6 +492,10 @@ function assertExecutionLogRecord(
   assertBoolean(privacy.blocked, 'privacy.blocked', lineNumber)
   assertBoolean(privacy.secretDetected, 'privacy.secretDetected', lineNumber)
 
+  if (record.providerAttempt !== undefined) {
+    assertProviderAttempt(record.providerAttempt, lineNumber)
+  }
+
   if (record.developerOutcome !== undefined) {
     const outcome = assertRecord(record.developerOutcome, 'developerOutcome', lineNumber)
     assertAllowedValue(
@@ -508,6 +565,8 @@ export async function readExecutionLogRecords(projectRoot: string): Promise<Exec
 function createEmptySummary(): ExecutionLogSummary {
   return {
     totalRecords: 0,
+    workflowRuns: 0,
+    providerAttempts: 0,
     byWorkflow: {},
     byProviderModel: {},
     byResultStatus: {
@@ -521,8 +580,7 @@ function createEmptySummary(): ExecutionLogSummary {
       totalTokens: 0,
     },
     advisoryCostByCurrency: {},
-    retried: 0,
-    escalated: 0,
+    adaptiveRetries: 0,
     developerOutcomes: {
       accepted: 0,
       retried: 0,
@@ -542,6 +600,7 @@ export function summariseExecutionLogRecords(
 ): ExecutionLogSummary {
   const summary = createEmptySummary()
   const effectiveOutcomes = new Map<string, DeveloperOutcomeStatus>()
+  const workflowExecutionIds = new Set<string>()
 
   records.forEach((record) => {
     if (record.developerOutcome !== undefined) {
@@ -555,6 +614,11 @@ export function summariseExecutionLogRecords(
 
   records.forEach((record) => {
     summary.totalRecords += 1
+    summary.providerAttempts += 1
+    workflowExecutionIds.add(record.providerAttempt?.workflowExecutionId ?? record.id)
+    if (record.providerAttempt?.adaptiveRetry === true) {
+      summary.adaptiveRetries += 1
+    }
     increment(summary.byWorkflow, record.workflow.type)
     increment(summary.byProviderModel, `${record.provider}/${record.model}`)
     summary.byResultStatus[record.result.status] += 1
@@ -565,6 +629,8 @@ export function summariseExecutionLogRecords(
       (summary.advisoryCostByCurrency[record.costEstimate.currency] ?? 0) +
       record.costEstimate.estimatedTotalCost
   })
+
+  summary.workflowRuns = workflowExecutionIds.size
 
   const countedExecutionIds = new Set<string>()
 
@@ -581,14 +647,6 @@ export function summariseExecutionLogRecords(
     }
 
     summary.developerOutcomes[status] += 1
-
-    if (status === 'retried') {
-      summary.retried += 1
-    }
-
-    if (status === 'escalated') {
-      summary.escalated += 1
-    }
   })
 
   return summary

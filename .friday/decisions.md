@@ -463,6 +463,29 @@ use visible, predictable, and bounded.
 Implicit runs may make a second local request. Explicit ceilings disable retry,
 and unknown or insufficient context limits fail without silently expanding use.
 
+### 2026-07-14 — Distinguish provider attempts from developer retry judgements
+
+**Context**
+
+The execution log recorded each provider invocation but did not link attempts
+from one logical run. As a result, `friday usage` labelled developer-recorded
+`retried` outcomes as generic retries, which obscured real adaptive execution.
+
+**Decision**
+
+Add optional metadata-only provider-attempt fields: a generated workflow-run
+identifier, one-based attempt number, and `adaptiveRetry`. New local executions
+record every provider attempt with that relationship; older version-1 records
+without it remain readable as one workflow run, one provider attempt, and zero
+adaptive retries. Usage now reports workflow runs, provider attempts, adaptive
+provider retries, attempt results, and developer-recorded outcomes separately.
+
+**Reasoning**
+
+This makes a failed `output-limit-exhausted` attempt followed by a successful
+retry inspectable without storing prompts, responses, reasoning, secrets, or
+developer free text. Outcome events remain append-only and latest-event-wins.
+
 ### 2026-07-13 — Keep live generated output local
 
 **Context**

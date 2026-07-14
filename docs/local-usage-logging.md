@@ -18,6 +18,7 @@ Each line is a versioned JSON record. Schema version `1` captures:
 - token usage and advisory cost estimates
 - execution result status
 - safe provider failure details such as error code and finish reason
+- optional provider-attempt metadata: a generated workflow-run identifier, attempt number, and whether the attempt was Friday's bounded adaptive retry
 - privacy level, blocked state, and whether a secret was detected
 - optional legacy developer outcome status from schema version `1`
 - optional structured hosted-budget acknowledgement or hard-limit override metadata
@@ -40,7 +41,9 @@ Repair or remove that local JSONL line, then rerun the command. Do not replace a
 record with prompt, response, secret, or private-snippet content: those are not
 part of this schema.
 
-Schema version `1` remains supported. Friday currently supports no older
+Schema version `1` remains supported. The optional provider-attempt metadata was
+added compatibly: an older record without it is read as one workflow run with one
+provider attempt and no adaptive retry. Friday currently supports no older
 execution-log schema version; a record marked with another version is rejected
 with a repair message naming the supported version rather than silently being
 interpreted as version `1`.
@@ -106,16 +109,22 @@ that JavaScript can parse. Duration filters are relative to the current time and
 records are selected by completion time. `--group-by workflow` or
 `--group-by model` narrows the grouping section; the default includes both.
 
-The summary reports:
+The summary keeps provider execution behaviour separate from developer judgement:
 
-- total record count
+- workflow-run count (logical Friday runs)
+- provider-attempt count (each model invocation)
+- bounded adaptive provider retry count
 - successful, failed, and blocked attempt counts
 - recorded input, output, and total token counts
 - advisory cost totals by currency
-- counts by workflow
-- counts by provider/model
-- retry and escalation counts
-- counts for each developer outcome status
+- provider-attempt counts by workflow and provider/model
+- counts for each developer-recorded outcome status, including `retried` and `escalated`
+
+An adaptive retry is a second provider attempt that Friday makes after an
+implicit output limit is exhausted. A developer-recorded `retried` outcome is a
+separate append-only judgement and never increments the adaptive provider retry
+count. Older records without provider-attempt metadata receive the fallback
+semantics above, so existing history remains readable.
 
 Malformed execution or outcome JSONL is rejected with a line-specific error so local history can be repaired without guessing which record failed.
 

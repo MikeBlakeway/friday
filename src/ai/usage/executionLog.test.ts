@@ -295,6 +295,27 @@ describe('execution log', () => {
       }),
     ],
     [
+      'providerAttempt.workflowExecutionId',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        providerAttempt: { workflowExecutionId: '', attempt: 1, adaptiveRetry: false },
+      }),
+    ],
+    [
+      'providerAttempt.attempt',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        providerAttempt: { workflowExecutionId: 'workflow-1', attempt: 0, adaptiveRetry: false },
+      }),
+    ],
+    [
+      'providerAttempt.adaptiveRetry',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        providerAttempt: { workflowExecutionId: 'workflow-1', attempt: 1, adaptiveRetry: 'no' },
+      }),
+    ],
+    [
       'budgetOverride.recordedAt',
       (record: ExecutionLogRecord) => ({
         ...record,
@@ -407,7 +428,15 @@ describe('execution log', () => {
     )
   })
 
-  it('summarises workflows, provider/models, retries, and escalations', () => {
+  it('keeps existing records readable as one workflow run and one provider attempt', () => {
+    const summary = summariseExecutionLogRecords([createRecord()])
+
+    expect(summary.workflowRuns).toBe(1)
+    expect(summary.providerAttempts).toBe(1)
+    expect(summary.adaptiveRetries).toBe(0)
+  })
+
+  it('summarises workflow runs, provider attempts, adaptive retries, and developer outcomes', () => {
     const summary = summariseExecutionLogRecords([
       createRecord({
         id: 'exec-1',
@@ -449,6 +478,8 @@ describe('execution log', () => {
 
     expect(summary).toEqual({
       totalRecords: 3,
+      workflowRuns: 3,
+      providerAttempts: 3,
       byWorkflow: {
         plan: 2,
         review: 1,
@@ -470,8 +501,7 @@ describe('execution log', () => {
       advisoryCostByCurrency: {
         USD: 0,
       },
-      retried: 1,
-      escalated: 1,
+      adaptiveRetries: 0,
       developerOutcomes: {
         accepted: 0,
         retried: 1,
@@ -479,6 +509,34 @@ describe('execution log', () => {
         rejected: 0,
       },
     })
+  })
+
+  it('groups adaptive attempts under one workflow run without treating developer outcomes as retries', () => {
+    const summary = summariseExecutionLogRecords([
+      createRecord({
+        id: 'attempt-1',
+        result: { status: 'failed', errorCode: 'output-limit-exhausted' },
+        providerAttempt: {
+          workflowExecutionId: 'workflow-1',
+          attempt: 1,
+          adaptiveRetry: false,
+        },
+      }),
+      createRecord({
+        id: 'attempt-2',
+        developerOutcome: { status: 'retried' },
+        providerAttempt: {
+          workflowExecutionId: 'workflow-1',
+          attempt: 2,
+          adaptiveRetry: true,
+        },
+      }),
+    ])
+
+    expect(summary.workflowRuns).toBe(1)
+    expect(summary.providerAttempts).toBe(2)
+    expect(summary.adaptiveRetries).toBe(1)
+    expect(summary.developerOutcomes.retried).toBe(1)
   })
 
   it('counts only the latest append-only outcome for each execution', () => {

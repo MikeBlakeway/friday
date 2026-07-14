@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 
 import { estimateAiUsageCost } from '../pricing/estimateAiUsageCost.js'
@@ -300,6 +301,7 @@ async function recordFailedProviderExecution(input: {
   startedAt: Date
   completedAt: Date
   error: unknown
+  workflowExecutionId: string
   attempt: number
 }): Promise<void> {
   const providerError = input.error instanceof ModelProviderError ? input.error : undefined
@@ -338,6 +340,11 @@ async function recordFailedProviderExecution(input: {
         privacyLevel: input.routeSummary.classification.privacyLevel,
         blocked: input.routeSummary.classification.blocked,
         secretDetected: input.routeSummary.classification.secrets.length > 0,
+      },
+      providerAttempt: {
+        workflowExecutionId: input.workflowExecutionId,
+        attempt: input.attempt,
+        adaptiveRetry: input.attempt > 1,
       },
     }),
   )
@@ -404,6 +411,7 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
     }))
   const { prompt, promptArtifact, routeSummary, tokenAllowance } = preparedExecution
   const executionStartedAt = options.now?.() ?? new Date()
+  const workflowExecutionId = randomUUID()
 
   let providerResult: GenerateModelResponseResult
   let effectiveRequest: ExecutePromptRequest = {
@@ -436,6 +444,7 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
           startedAt: attemptStartedAt,
           completedAt: attemptCompletedAt,
           error,
+          workflowExecutionId,
           attempt,
         })
       } catch (recordingError) {
@@ -512,9 +521,9 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
           chosenRoute: result.route,
           provider: result.provider,
           model: result.model,
-          startedAt: executionStartedAt.toISOString(),
+          startedAt: attemptStartedAt.toISOString(),
           completedAt: executionCompletedAt.toISOString(),
-          latencyMs: Math.max(0, executionCompletedAt.getTime() - executionStartedAt.getTime()),
+          latencyMs: Math.max(0, executionCompletedAt.getTime() - attemptStartedAt.getTime()),
           usage: result.usage,
           costEstimate: result.costEstimate,
           result: {
@@ -526,6 +535,11 @@ export async function executePrompt(options: ExecutePromptOptions): Promise<Exec
             privacyLevel: result.classification.privacyLevel,
             blocked: result.classification.blocked,
             secretDetected: result.classification.secrets.length > 0,
+          },
+          providerAttempt: {
+            workflowExecutionId,
+            attempt,
+            adaptiveRetry: attempt > 1,
           },
         }),
       )
