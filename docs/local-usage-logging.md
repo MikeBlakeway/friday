@@ -24,6 +24,27 @@ Each line is a versioned JSON record. Schema version `1` captures:
 
 The log remains local. Friday does not upload, synchronise, or send it to an analytics service.
 
+## Schema validation and repair
+
+Friday validates every execution-log field before usage reporting or hosted-budget
+evaluation sees it. That includes both routes, supported route values, ISO
+timestamps, non-negative latency and costs, internally consistent integer token
+counts, privacy/result/outcome values, and structured budget overrides. A bad
+line stops the read with its exact line number and field path, for example:
+
+```text
+Malformed execution log record at line 12: invalid chosenRoute.provider.
+```
+
+Repair or remove that local JSONL line, then rerun the command. Do not replace a
+record with prompt, response, secret, or private-snippet content: those are not
+part of this schema.
+
+Schema version `1` remains supported. Friday currently supports no older
+execution-log schema version; a record marked with another version is rejected
+with a repair message naming the supported version rather than silently being
+interpreted as version `1`.
+
 ## Recording developer outcomes
 
 Provider execution status and developer outcome answer different questions. An

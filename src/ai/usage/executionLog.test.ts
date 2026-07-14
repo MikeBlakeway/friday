@@ -160,7 +160,201 @@ describe('execution log', () => {
     await writeFile(logPath, `${JSON.stringify(malformedRecord)}\n`, 'utf8')
 
     await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
-      'Malformed execution log record at line 1: missing required fields.',
+      'Malformed execution log record at line 1: invalid usage.inputTokens.',
+    )
+  })
+
+  it.each([
+    [
+      'workflow.type',
+      (record: ExecutionLogRecord) => ({ ...record, workflow: { type: 'unknown-workflow' } }),
+    ],
+    ['recommendedRoute', (record: ExecutionLogRecord) => ({ ...record, recommendedRoute: null })],
+    [
+      'chosenRoute.provider',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        chosenRoute: { ...record.chosenRoute, provider: 'unsupported' },
+      }),
+    ],
+    [
+      'chosenRoute.modelTier',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        chosenRoute: { ...record.chosenRoute, modelTier: 'hosted' },
+      }),
+    ],
+    ['startedAt', (record: ExecutionLogRecord) => ({ ...record, startedAt: 'not-a-timestamp' })],
+    ['completedAt', (record: ExecutionLogRecord) => ({ ...record, completedAt: '2026-07-10' })],
+    ['latencyMs', (record: ExecutionLogRecord) => ({ ...record, latencyMs: -1 })],
+    ['provider', (record: ExecutionLogRecord) => ({ ...record, provider: '' })],
+    ['model', (record: ExecutionLogRecord) => ({ ...record, model: '' })],
+    [
+      'usage.inputTokens',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        usage: { ...record.usage, inputTokens: -1 },
+      }),
+    ],
+    [
+      'usage.outputTokens',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        usage: { ...record.usage, outputTokens: 1.5 },
+      }),
+    ],
+    [
+      'usage.totalTokens',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        usage: { ...record.usage, totalTokens: 31 },
+      }),
+    ],
+    [
+      'costEstimate.estimatedTotalTokens',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, estimatedTotalTokens: 31 },
+      }),
+    ],
+    [
+      'costEstimate.currency',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, currency: 'usd' },
+      }),
+    ],
+    [
+      'costEstimate.provider',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, provider: '' },
+      }),
+    ],
+    [
+      'costEstimate.estimatedInputTokens',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, estimatedInputTokens: -1 },
+      }),
+    ],
+    [
+      'costEstimate.estimatedTotalCost',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, estimatedTotalCost: -0.1 },
+      }),
+    ],
+    [
+      'costEstimate.advisory',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, advisory: false },
+      }),
+    ],
+    [
+      'costEstimate.basis',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        costEstimate: { ...record.costEstimate, basis: 'actual-provider-bill' },
+      }),
+    ],
+    [
+      'privacy.privacyLevel',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        privacy: { ...record.privacy, privacyLevel: 'confidential' },
+      }),
+    ],
+    [
+      'privacy.blocked',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        privacy: { ...record.privacy, blocked: 'false' },
+      }),
+    ],
+    [
+      'result.status',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        result: { ...record.result, status: 'partial' },
+      }),
+    ],
+    [
+      'result.errorCode',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        result: { ...record.result, errorCode: 500 },
+      }),
+    ],
+    [
+      'developerOutcome.status',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        developerOutcome: { status: 'maybe' },
+      }),
+    ],
+    [
+      'budgetOverride.recordedAt',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        budgetOverride: {
+          schemaVersion: 1,
+          reason: 'hard-limit',
+          recordedAt: 'not-a-timestamp',
+        },
+      }),
+    ],
+    [
+      'budgetOverride.reason',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        budgetOverride: {
+          schemaVersion: 1,
+          reason: 'automatic',
+          recordedAt: '2026-07-14T10:00:00.000Z',
+        },
+      }),
+    ],
+  ])('rejects invalid %s with an exact line and field', async (fieldName, mutateRecord) => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const malformedRecord = mutateRecord(createRecord())
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(logPath, `${JSON.stringify(malformedRecord)}\n`, 'utf8')
+
+    await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
+      `Malformed execution log record at line 1: invalid ${fieldName}.`,
+    )
+  })
+
+  it('rejects a non-finite JSON number before usage or budget evaluation', async () => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const nonFiniteJson = JSON.stringify(createRecord()).replace(
+      '"latencyMs":1250',
+      '"latencyMs":1e999',
+    )
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(logPath, `${nonFiniteJson}\n`, 'utf8')
+
+    await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
+      'Malformed execution log record at line 1: invalid latencyMs.',
+    )
+  })
+
+  it('documents schema-version migration through a specific repair error', async () => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const legacyRecord = { ...createRecord(), schemaVersion: 0 }
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(logPath, `${JSON.stringify(legacyRecord)}\n`, 'utf8')
+
+    await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
+      'Malformed execution log record at line 1: unsupported schemaVersion; use schemaVersion 1.',
     )
   })
 
