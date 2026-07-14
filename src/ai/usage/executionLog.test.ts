@@ -7,8 +7,16 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { AiUsageCostEstimate } from '../pricing/pricingModel.js'
 import type { AiRoute } from '../routing/modelRouting.js'
 import {
+  AI_TASK_TYPES,
+  MODEL_PROVIDERS,
+  MODEL_TIERS,
+  RECOMMENDED_MODELS,
+  ROUTE_DECISIONS,
+} from '../routing/modelRouting.js'
+import {
   appendExecutionLogRecord,
   createExecutionLogRecord,
+  EXECUTION_LOG_LATENCY_TOLERANCE_MS,
   getExecutionLogPath,
   readExecutionLogRecords,
   summariseExecutionLog,
@@ -162,6 +170,49 @@ describe('execution log', () => {
     await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
       'Malformed execution log record at line 1: invalid usage.inputTokens.',
     )
+  })
+
+  it('accepts every canonical routing value in execution history', async () => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const records = [
+      ...AI_TASK_TYPES.map((type, index) =>
+        createRecord({ id: `workflow-${index}`, workflow: { type } }),
+      ),
+      ...ROUTE_DECISIONS.map((decision, index) =>
+        createRecord({
+          id: `route-decision-${index}`,
+          chosenRoute: { ...premiumRoute, decision },
+        }),
+      ),
+      ...MODEL_PROVIDERS.map((provider, index) =>
+        createRecord({
+          id: `route-provider-${index}`,
+          chosenRoute: { ...premiumRoute, provider },
+        }),
+      ),
+      ...MODEL_TIERS.map((modelTier, index) =>
+        createRecord({
+          id: `route-model-tier-${index}`,
+          chosenRoute: { ...premiumRoute, modelTier },
+        }),
+      ),
+      ...RECOMMENDED_MODELS.map((model, index) =>
+        createRecord({
+          id: `route-model-${index}`,
+          chosenRoute: { ...premiumRoute, model },
+        }),
+      ),
+    ]
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(
+      logPath,
+      `${records.map((record) => JSON.stringify(record)).join('\n')}\n`,
+      'utf8',
+    )
+
+    await expect(readExecutionLogRecords(projectRoot)).resolves.toEqual(records)
   })
 
   it.each([
@@ -364,6 +415,49 @@ describe('execution log', () => {
     await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
       'Malformed execution log record at line 1: invalid latencyMs.',
     )
+  })
+
+  it.each([
+    [
+      'completedAt',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        completedAt: '2026-07-10T10:20:29.999Z',
+      }),
+    ],
+    [
+      'latencyMs',
+      (record: ExecutionLogRecord) => ({
+        ...record,
+        latencyMs: 1_250 + EXECUTION_LOG_LATENCY_TOLERANCE_MS + 1,
+      }),
+    ],
+  ])(
+    'rejects temporally inconsistent %s with an exact line and field',
+    async (fieldName, mutateRecord) => {
+      const projectRoot = await createTempProject()
+      const logPath = getExecutionLogPath(projectRoot)
+
+      await mkdir(path.dirname(logPath), { recursive: true })
+      await writeFile(logPath, `${JSON.stringify(mutateRecord(createRecord()))}\n`, 'utf8')
+
+      await expect(readExecutionLogRecords(projectRoot)).rejects.toThrow(
+        `Malformed execution log record at line 1: invalid ${fieldName}.`,
+      )
+    },
+  )
+
+  it('accepts latency within the documented timestamp-precision tolerance', async () => {
+    const projectRoot = await createTempProject()
+    const logPath = getExecutionLogPath(projectRoot)
+    const record = createRecord({
+      latencyMs: 1_250 + EXECUTION_LOG_LATENCY_TOLERANCE_MS,
+    })
+
+    await mkdir(path.dirname(logPath), { recursive: true })
+    await writeFile(logPath, `${JSON.stringify(record)}\n`, 'utf8')
+
+    await expect(readExecutionLogRecords(projectRoot)).resolves.toEqual([record])
   })
 
   it('documents schema-version migration through a specific repair error', async () => {

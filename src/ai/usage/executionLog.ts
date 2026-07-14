@@ -3,8 +3,16 @@ import path from 'node:path'
 import { appendTextFile, ensureDir, pathExists, readTextFile } from '../../core/fileSystem.js'
 import { FRIDAY_PROJECT_DIR } from '../../core/fridayProject.js'
 import type { AiUsageCostEstimate } from '../pricing/pricingModel.js'
-import type { PrivacyLevel } from '../routing/modelRouting.js'
-import type { AiRoute } from '../routing/modelRouting.js'
+import {
+  AI_TASK_TYPES,
+  MODEL_PROVIDERS,
+  MODEL_TIERS,
+  PRIVACY_LEVELS,
+  RECOMMENDED_MODELS,
+  ROUTE_DECISIONS,
+  type AiRoute,
+  type PrivacyLevel,
+} from '../routing/modelRouting.js'
 import type { DeveloperOutcomeEvent } from './outcomeLog.js'
 import {
   BUDGET_OVERRIDE_SCHEMA_VERSION,
@@ -14,6 +22,12 @@ import {
 export const EXECUTION_LOG_SCHEMA_VERSION = 1
 export const FRIDAY_RUNTIME_DIR = 'runtime'
 export const FRIDAY_EXECUTION_LOG_FILE = 'execution-log.jsonl'
+/**
+ * JavaScript timestamps have millisecond precision. Allow a one-millisecond
+ * difference between the recorded elapsed time and latency to preserve records
+ * whose ISO timestamps use sub-millisecond precision.
+ */
+export const EXECUTION_LOG_LATENCY_TOLERANCE_MS = 1
 
 export type DeveloperOutcomeStatus = 'accepted' | 'retried' | 'escalated' | 'rejected'
 export type ExecutionResultStatus = 'succeeded' | 'failed' | 'blocked'
@@ -247,39 +261,6 @@ export function createExecutionLogRecord(input: CreateExecutionLogRecordInput): 
   return record
 }
 
-const WORKFLOW_TYPES = [
-  'brainstorm',
-  'plan',
-  'spec',
-  'design',
-  'build',
-  'review',
-  'refactor',
-  'test',
-  'ship',
-  'ask',
-  'escalate',
-] as const
-const ROUTE_DECISIONS = [
-  'no-ai-required',
-  'use-local',
-  'use-cheap-hosted',
-  'use-strong-hosted',
-  'use-premium',
-  'blocked',
-] as const
-const ROUTE_PROVIDERS = ['none', 'local', 'deepseek', 'openai', 'anthropic'] as const
-const ROUTE_MODEL_TIERS = ['none', 'local', 'cheap-hosted', 'strong-hosted', 'premium'] as const
-const ROUTE_MODELS = [
-  'none',
-  'local-coder',
-  'deepseek-v4-flash',
-  'deepseek-v4-pro',
-  'gpt-5',
-  'gpt-5.5',
-  'claude-opus',
-] as const
-const PRIVACY_LEVELS = ['public', 'internal', 'private-repo', 'sensitive', 'secret'] as const
 const RESULT_STATUSES = ['succeeded', 'failed', 'blocked'] as const
 const DEVELOPER_OUTCOME_STATUSES = ['accepted', 'retried', 'escalated', 'rejected'] as const
 const BUDGET_OVERRIDE_REASONS = ['warning-acknowledged', 'hard-limit'] as const
@@ -346,7 +327,11 @@ function assertFiniteNonNegativeNumber(
   }
 }
 
-function assertIsoTimestamp(value: unknown, fieldName: string, lineNumber: number): void {
+function assertIsoTimestamp(
+  value: unknown,
+  fieldName: string,
+  lineNumber: number,
+): asserts value is string {
   if (
     typeof value !== 'string' ||
     !ISO_TIMESTAMP.test(value) ||
@@ -359,12 +344,29 @@ function assertIsoTimestamp(value: unknown, fieldName: string, lineNumber: numbe
 function assertRoute(value: unknown, fieldName: string, lineNumber: number): void {
   const route = assertRecord(value, fieldName, lineNumber)
   assertAllowedValue(route.decision, `${fieldName}.decision`, ROUTE_DECISIONS, lineNumber)
-  assertAllowedValue(route.provider, `${fieldName}.provider`, ROUTE_PROVIDERS, lineNumber)
-  assertAllowedValue(route.modelTier, `${fieldName}.modelTier`, ROUTE_MODEL_TIERS, lineNumber)
-  assertAllowedValue(route.model, `${fieldName}.model`, ROUTE_MODELS, lineNumber)
+  assertAllowedValue(route.provider, `${fieldName}.provider`, MODEL_PROVIDERS, lineNumber)
+  assertAllowedValue(route.modelTier, `${fieldName}.modelTier`, MODEL_TIERS, lineNumber)
+  assertAllowedValue(route.model, `${fieldName}.model`, RECOMMENDED_MODELS, lineNumber)
   assertNonEmptyString(route.reason, `${fieldName}.reason`, lineNumber)
   assertBoolean(route.requiresApproval, `${fieldName}.requiresApproval`, lineNumber)
   assertBoolean(route.blocked, `${fieldName}.blocked`, lineNumber)
+}
+
+function assertTemporalConsistency(
+  startedAt: string,
+  completedAt: string,
+  latencyMs: number,
+  lineNumber: number,
+): void {
+  const elapsedMs = Date.parse(completedAt) - Date.parse(startedAt)
+
+  if (elapsedMs < 0) {
+    invalidField(lineNumber, 'completedAt')
+  }
+
+  if (Math.abs(latencyMs - elapsedMs) > EXECUTION_LOG_LATENCY_TOLERANCE_MS) {
+    invalidField(lineNumber, 'latencyMs')
+  }
 }
 
 function assertTokenUsage(value: unknown, fieldName: string, lineNumber: number): void {
@@ -469,7 +471,7 @@ function assertExecutionLogRecord(
 
   assertNonEmptyString(record.id, 'id', lineNumber)
   const workflow = assertRecord(record.workflow, 'workflow', lineNumber)
-  assertAllowedValue(workflow.type, 'workflow.type', WORKFLOW_TYPES, lineNumber)
+  assertAllowedValue(workflow.type, 'workflow.type', AI_TASK_TYPES, lineNumber)
   assertOptionalNonEmptyString(workflow.artifact, 'workflow.artifact', lineNumber)
   assertRoute(record.recommendedRoute, 'recommendedRoute', lineNumber)
   assertRoute(record.chosenRoute, 'chosenRoute', lineNumber)
@@ -478,6 +480,7 @@ function assertExecutionLogRecord(
   assertIsoTimestamp(record.startedAt, 'startedAt', lineNumber)
   assertIsoTimestamp(record.completedAt, 'completedAt', lineNumber)
   assertFiniteNonNegativeNumber(record.latencyMs, 'latencyMs', lineNumber)
+  assertTemporalConsistency(record.startedAt, record.completedAt, record.latencyMs, lineNumber)
   assertTokenUsage(record.usage, 'usage', lineNumber)
   assertCostEstimate(record.costEstimate, lineNumber)
 

@@ -29,9 +29,14 @@ The log remains local. Friday does not upload, synchronise, or send it to an ana
 
 Friday validates every execution-log field before usage reporting or hosted-budget
 evaluation sees it. That includes both routes, supported route values, ISO
-timestamps, non-negative latency and costs, internally consistent integer token
-counts, privacy/result/outcome values, and structured budget overrides. A bad
-line stops the read with its exact line number and field path, for example:
+timestamps, temporal consistency, non-negative latency and costs, internally
+consistent integer token counts, privacy/result/outcome values, and structured
+budget overrides. Route values are read from Friday's shared routing domain, so
+new supported route providers and models stay readable in existing history.
+`completedAt` must not precede `startedAt`; `latencyMs` must match their elapsed
+milliseconds within a deterministic 1 ms tolerance for sub-millisecond ISO
+timestamp precision. A bad line stops the read with its exact line number and
+field path, for example:
 
 ```text
 Malformed execution log record at line 12: invalid chosenRoute.provider.
