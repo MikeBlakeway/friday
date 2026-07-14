@@ -12,7 +12,7 @@ export const FRIDAY_BUDGET_POLICY_FILE = 'budget-policy.json'
 
 export type BudgetPeriod = 'calendar-month'
 export type BudgetPolicySource = 'none' | 'global' | 'project' | 'global-and-project'
-export type HostedBudgetStatus = 'within' | 'warning' | 'blocked'
+export type HostedBudgetStatus = 'unconfigured' | 'within' | 'warning' | 'blocked'
 
 export interface HostedCostBudgetPolicy {
   warningThreshold?: number
@@ -55,6 +55,7 @@ export interface HostedBudgetPolicyResult {
   projectedUsage: number
   applicableLimit?: number
   remainingAllowance?: number
+  overage?: number
   status: HostedBudgetStatus
   warningAcknowledgementRequired: boolean
   hardLimitOverrideAllowed: boolean
@@ -237,16 +238,17 @@ export function resolveEffectiveHostedBudgetPolicy(
   const globalBudget = policies.global?.aggregateHostedCost
   const projectBudget = policies.project?.aggregateHostedCost
   const hardLimit = lowerDefined(globalBudget?.hardLimit, projectBudget?.hardLimit)
-  const warningThreshold = lowerDefined(
+  const configuredWarningThreshold = lowerDefined(
     globalBudget?.warningThreshold,
     projectBudget?.warningThreshold,
   )
-
-  if (warningThreshold !== undefined && hardLimit !== undefined && warningThreshold > hardLimit) {
-    throw new Error(
-      'Combined budget policy is invalid: the effective warning threshold exceeds the effective hard limit.',
-    )
-  }
+  // Each policy is validated independently. When one layer supplies a lower hard
+  // limit than another layer's warning threshold, use that stricter hard limit as
+  // the warning ceiling rather than rejecting two otherwise valid policies.
+  const warningThreshold =
+    hardLimit === undefined
+      ? configuredWarningThreshold
+      : lowerDefined(configuredWarningThreshold, hardLimit)
 
   const hardLimitPolicies = configuredPolicies.filter(
     (policy) => policy.aggregateHostedCost.hardLimit !== undefined,
@@ -339,7 +341,7 @@ export function evaluateHostedBudgetPolicy(
       currentUsage,
       estimatedRequestCost: input.estimatedRequestCost,
       projectedUsage,
-      status: 'within',
+      status: 'unconfigured',
       warningAcknowledgementRequired: false,
       hardLimitOverrideAllowed: false,
       reasons,
@@ -380,7 +382,12 @@ export function evaluateHostedBudgetPolicy(
     ...(policy.hardLimit === undefined ? {} : { applicableLimit: policy.hardLimit }),
     ...(policy.hardLimit === undefined
       ? {}
-      : { remainingAllowance: roundCost(policy.hardLimit - projectedUsage) }),
+      : {
+          remainingAllowance: roundCost(Math.max(0, policy.hardLimit - projectedUsage)),
+          ...(projectedUsage > policy.hardLimit
+            ? { overage: roundCost(projectedUsage - policy.hardLimit) }
+            : {}),
+        }),
     status,
     warningAcknowledgementRequired: status === 'warning',
     hardLimitOverrideAllowed: status === 'blocked' && policy.allowHardLimitOverride,

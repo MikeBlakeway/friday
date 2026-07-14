@@ -110,6 +110,12 @@ function parseUsageArgs(args: string[], now = new Date()): ParsedUsageArgs {
     }
   }
 
+  if (budget && (since !== undefined || groupBy !== undefined)) {
+    throw new Error(
+      'friday usage --budget always reports the current UTC calendar month and does not support --since or --group-by. Run "friday usage" without --budget to use those options.',
+    )
+  }
+
   return {
     ...(groupBy === undefined ? {} : { groupBy }),
     ...(since === undefined ? {} : { since }),
@@ -129,6 +135,9 @@ function formatBudgetSummary(result: HostedBudgetPolicyResult): string {
         ? 'No hard limit configured'
         : `${result.remainingAllowance.toFixed(6)} ${result.currency}`
     }`,
+    ...(result.overage === undefined
+      ? []
+      : [`Overage: ${result.overage.toFixed(6)} ${result.currency}`]),
     `Status: ${result.status}`,
     `Warning acknowledgement required: ${result.warningAcknowledgementRequired ? 'yes' : 'no'}`,
     `Hard-limit override allowed: ${result.hardLimitOverrideAllowed ? 'yes' : 'no'}`,

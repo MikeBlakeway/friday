@@ -283,4 +283,56 @@ describe('runUsageCommand', () => {
     expect(output).toContain('Status: warning')
     expect(output).toContain('Warning acknowledgement required: yes')
   })
+
+  it('rejects filters and grouping when reporting the fixed calendar-month budget', async () => {
+    const projectRoot = await createTempProject()
+
+    await expect(
+      runUsageCommand({ projectRoot, args: ['--budget', '--since', '7d'] }),
+    ).rejects.toThrow('friday usage --budget always reports the current UTC calendar month')
+    await expect(
+      runUsageCommand({ projectRoot, args: ['--group-by', 'model', '--budget'] }),
+    ).rejects.toThrow('does not support --since or --group-by')
+  })
+
+  it('makes missing-policy and hard-limit budget states unambiguous', async () => {
+    const projectRoot = await createTempProject()
+    const missingPolicy = await captureUsageOutput({
+      projectRoot,
+      args: ['--budget'],
+      now: new Date('2026-07-12T12:00:00.000Z'),
+    })
+
+    expect(missingPolicy).toContain('Policy source: none')
+    expect(missingPolicy).toContain('Status: unconfigured')
+    expect(missingPolicy).not.toContain('Status: within')
+
+    await mkdir(path.join(projectRoot, '.friday'), { recursive: true })
+    await writeFile(
+      path.join(projectRoot, '.friday', 'budget-policy.json'),
+      `${JSON.stringify({
+        schemaVersion: 1,
+        period: 'calendar-month',
+        currency: 'USD',
+        aggregateHostedCost: { hardLimit: 1 },
+      })}\n`,
+      'utf8',
+    )
+    await appendExecutionLogRecord(
+      projectRoot,
+      createRecord({
+        chosenRoute: { ...localRoute, provider: 'deepseek', modelTier: 'strong-hosted' },
+        costEstimate: { ...createRecord().costEstimate, estimatedTotalCost: 1.25 },
+      }),
+    )
+
+    const exceeded = await captureUsageOutput({
+      projectRoot,
+      args: ['--budget'],
+      now: new Date('2026-07-12T12:00:00.000Z'),
+    })
+    expect(exceeded).toContain('Remaining allowance: 0.000000 USD')
+    expect(exceeded).toContain('Overage: 0.250000 USD')
+    expect(exceeded).toContain('Status: blocked')
+  })
 })
