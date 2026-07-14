@@ -10,6 +10,10 @@ import {
   type ExecutionLogRecord,
 } from '../../ai/usage/executionLog.js'
 import type { AiRoute } from '../../ai/routing/modelRouting.js'
+import {
+  appendDeveloperOutcomeEvent,
+  createDeveloperOutcomeEvent,
+} from '../../ai/usage/outcomeLog.js'
 import { runUsageCommand } from './usage.js'
 
 const tempDirs: string[] = []
@@ -130,6 +134,15 @@ describe('runUsageCommand', () => {
         },
       }),
     )
+    await appendDeveloperOutcomeEvent(
+      projectRoot,
+      createDeveloperOutcomeEvent({
+        id: 'outcome-1',
+        executionId: 'exec-1',
+        status: 'accepted',
+        recordedAt: '2026-07-14T10:00:00.000Z',
+      }),
+    )
 
     const output = await captureUsageOutput({ projectRoot })
 
@@ -141,6 +154,9 @@ describe('runUsageCommand', () => {
     expect(output).toContain('Recorded total tokens: 375')
     expect(output).toContain('Advisory total cost: 0.125000 USD')
     expect(output).toContain('Retries: 1')
+    expect(output).toContain(
+      'Developer outcomes:\n  accepted: 1\n  escalated: 0\n  rejected: 0\n  retried: 1',
+    )
     expect(output).toContain('By workflow:\n  plan: 1\n  review: 1')
     expect(output).toContain('By provider/model:')
     expect(output).toContain('  anthropic/claude-opus: 1')

@@ -606,7 +606,9 @@ recorded tokens, advisory cost, outcomes, workflows, and provider/models without
 displaying prompt or response content. Reasoning-capable models
 use workflow-specific output allowances and at most one bounded, context-safe
 retry, while live phase feedback and the redacted assistant response remain
-visible in the CLI. Friday does not call hosted AI providers.
+visible in the CLI. Developers can use `friday outcome` to append an explicit
+accepted, retried, escalated, or rejected judgement to local history without
+storing prompts, responses, or free-text notes. Friday does not call hosted AI providers.
 
 Implemented CLI commands:
 
@@ -623,6 +625,7 @@ Implemented CLI commands:
 - `friday route`
 - `friday cost --provider <provider> --model <model> --input-tokens <n> --output-tokens <n>`
 - `friday usage [--since <duration|date>] [--group-by workflow|model]`
+- `friday outcome <execution-id|latest> <accepted|retried|escalated|rejected>`
 - `friday execute <prompt-path> --provider local [--display-max-lines <n>] [--display-max-chars <n>]`
 
 Planned CLI commands include `friday brainstorm`, `friday spec`, `friday design`,
@@ -722,6 +725,7 @@ Future possibilities:
 - [x] Built-in advisory model pricing
 - [x] Local metadata-only usage logging
 - [x] Read-only local usage summary command
+- [x] Explicit append-only developer outcome recording
 - [x] Advisory cost estimation CLI
 
 ### Milestone 3 — Model Routing
