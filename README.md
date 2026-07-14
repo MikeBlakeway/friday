@@ -611,8 +611,9 @@ cost summaries for those workflows, preview model routes, classify privacy risk,
 detect common secrets, estimate advisory model costs, and define
 provider-agnostic model contracts. It can prepare and execute plan and changed-file
 review workflows through a configured local LM Studio provider, preserving prompt
-and result artefacts plus metadata-only usage history. `friday usage` summarises
-recorded tokens, advisory cost, outcomes, workflows, and provider/models without
+and result artefacts plus metadata-only usage history. `friday usage` reports
+recorded token totals, workflow runs, provider attempts, bounded adaptive
+retries, advisory cost, and developer outcomes without
 displaying prompt or response content. Reasoning-capable models
 use workflow-specific output allowances and at most one bounded, context-safe
 retry, while live phase feedback and the redacted assistant response remain

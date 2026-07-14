@@ -107,7 +107,7 @@ describe('runUsageCommand', () => {
     )
   })
 
-  it('summarises successful, failed, and retried attempts using recorded token usage', async () => {
+  it('distinguishes provider attempts and adaptive retries from developer retry outcomes', async () => {
     const projectRoot = await createTempProject()
 
     await appendExecutionLogRecord(projectRoot, createRecord())
@@ -148,19 +148,20 @@ describe('runUsageCommand', () => {
 
     const output = await captureUsageOutput({ projectRoot })
 
-    expect(output).toContain('Execution records: 2')
+    expect(output).toContain('Workflow runs: 2')
+    expect(output).toContain('Provider attempts: 2')
     expect(output).toContain('Successful attempts: 1')
     expect(output).toContain('Failed attempts: 1')
     expect(output).toContain('Recorded input tokens: 300')
     expect(output).toContain('Recorded output tokens: 75')
     expect(output).toContain('Recorded total tokens: 375')
     expect(output).toContain('Advisory total cost: 0.125000 USD')
-    expect(output).toContain('Retries: 1')
+    expect(output).toContain('Adaptive provider retries: 0')
     expect(output).toContain(
-      'Developer outcomes:\n  accepted: 1\n  escalated: 0\n  rejected: 0\n  retried: 1',
+      'Developer-recorded outcomes:\n  accepted: 1\n  escalated: 0\n  rejected: 0\n  retried: 1',
     )
-    expect(output).toContain('By workflow:\n  plan: 1\n  review: 1')
-    expect(output).toContain('By provider/model:')
+    expect(output).toContain('Provider attempts by workflow:\n  plan: 1\n  review: 1')
+    expect(output).toContain('Provider attempts by provider/model:')
     expect(output).toContain('  anthropic/claude-opus: 1')
     expect(output).not.toContain('provider-error')
     expect(output).not.toContain('PRIVATE-SNIPPET')
@@ -182,7 +183,8 @@ describe('runUsageCommand', () => {
     const output = await captureUsageOutput({ projectRoot, args: ['--since', '24h'], now })
 
     expect(output).toContain('Since: 2026-07-12T12:00:00.000Z')
-    expect(output).toContain('Execution records: 1')
+    expect(output).toContain('Workflow runs: 1')
+    expect(output).toContain('Provider attempts: 1')
     expect(output).toContain('Recorded total tokens: 125')
   })
 
@@ -193,7 +195,7 @@ describe('runUsageCommand', () => {
 
     await expect(
       captureUsageOutput({ projectRoot, args: ['--since', '2026-07-12'] }),
-    ).resolves.toContain('Execution records: 1')
+    ).resolves.toContain('Provider attempts: 1')
     await expect(
       runUsageCommand({ projectRoot, args: ['--since', 'yesterday-ish'] }),
     ).rejects.toThrow('Invalid --since value')
@@ -212,10 +214,10 @@ describe('runUsageCommand', () => {
       args: ['--group-by', 'model'],
     })
 
-    expect(workflowOutput).toContain('By workflow:')
-    expect(workflowOutput).not.toContain('By provider/model:')
-    expect(modelOutput).toContain('By provider/model:')
-    expect(modelOutput).not.toContain('By workflow:')
+    expect(workflowOutput).toContain('Provider attempts by workflow:')
+    expect(workflowOutput).not.toContain('Provider attempts by provider/model:')
+    expect(modelOutput).toContain('Provider attempts by provider/model:')
+    expect(modelOutput).not.toContain('Provider attempts by workflow:')
     await expect(
       runUsageCommand({ projectRoot, args: ['--group-by', 'provider'] }),
     ).rejects.toThrow('--group-by must be "workflow" or "model".')

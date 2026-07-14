@@ -179,7 +179,8 @@ function formatUsageSummary(summary: ExecutionLogSummary, options: ParsedUsageAr
   const lines = [
     'Friday usage',
     ...(options.since === undefined ? [] : [`Since: ${options.since.toISOString()}`]),
-    `Execution records: ${summary.totalRecords}`,
+    `Workflow runs: ${summary.workflowRuns}`,
+    `Provider attempts: ${summary.providerAttempts}`,
     `Successful attempts: ${summary.byResultStatus.succeeded}`,
     `Failed attempts: ${summary.byResultStatus.failed}`,
     `Blocked attempts: ${summary.byResultStatus.blocked}`,
@@ -188,17 +189,16 @@ function formatUsageSummary(summary: ExecutionLogSummary, options: ParsedUsageAr
     `Recorded total tokens: ${summary.tokenUsage.totalTokens}`,
     ...formatAdvisoryCosts(summary),
     'Advisory costs are estimates, not billing records; local-model financial cost may be zero.',
-    `Retries: ${summary.retried}`,
-    `Escalations: ${summary.escalated}`,
-    ...formatCounts('Developer outcomes', summary.developerOutcomes),
+    `Adaptive provider retries: ${summary.adaptiveRetries}`,
+    ...formatCounts('Developer-recorded outcomes', summary.developerOutcomes),
   ]
 
   if (options.groupBy === undefined || options.groupBy === 'workflow') {
-    lines.push(...formatCounts('By workflow', summary.byWorkflow))
+    lines.push(...formatCounts('Provider attempts by workflow', summary.byWorkflow))
   }
 
   if (options.groupBy === undefined || options.groupBy === 'model') {
-    lines.push(...formatCounts('By provider/model', summary.byProviderModel))
+    lines.push(...formatCounts('Provider attempts by provider/model', summary.byProviderModel))
   }
 
   return lines.join('\n')

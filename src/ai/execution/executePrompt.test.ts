@@ -371,10 +371,20 @@ describe('executePrompt', () => {
     expect(requests.map((request) => request.maxOutputTokens)).toEqual([1_000, 2_000])
     expect(result.request.maxOutputTokens).toBe(2_000)
     expect(result.costEstimate.estimatedOutputTokens).toBe(2_000)
-    await expect(readExecutionLogRecords(projectRoot)).resolves.toMatchObject([
-      { result: { status: 'failed', errorCode: 'output-limit-exhausted' } },
-      { result: { status: 'succeeded' } },
+    const records = await readExecutionLogRecords(projectRoot)
+    expect(records).toMatchObject([
+      {
+        result: { status: 'failed', errorCode: 'output-limit-exhausted' },
+        providerAttempt: { attempt: 1, adaptiveRetry: false },
+      },
+      {
+        result: { status: 'succeeded' },
+        providerAttempt: { attempt: 2, adaptiveRetry: true },
+      },
     ])
+    expect(records[0]?.providerAttempt?.workflowExecutionId).toBe(
+      records[1]?.providerAttempt?.workflowExecutionId,
+    )
     const history = await readFile(
       path.join(projectRoot, FRIDAY_PROJECT_DIR, 'runtime', 'execution-log.jsonl'),
       'utf8',
@@ -422,6 +432,10 @@ describe('executePrompt', () => {
       }),
     ).rejects.toThrow('output exhausted')
     expect(implicitAttempts).toBe(2)
+    await expect(readExecutionLogRecords(implicitProject.projectRoot)).resolves.toMatchObject([
+      { providerAttempt: { attempt: 1, adaptiveRetry: false } },
+      { providerAttempt: { attempt: 2, adaptiveRetry: true } },
+    ])
 
     const explicitProject = await createPromptProject('# Plan\n\nExplicit ceiling.')
     const explicitProvider = createExhaustedProvider()
@@ -451,6 +465,9 @@ describe('executePrompt', () => {
       }),
     ).rejects.toThrow('explicit output exhausted')
     expect(explicitAttempts).toBe(1)
+    await expect(readExecutionLogRecords(explicitProject.projectRoot)).resolves.toMatchObject([
+      { providerAttempt: { attempt: 1, adaptiveRetry: false } },
+    ])
   })
 
   it('fails before generation when the requested output cannot fit the known context', async () => {
