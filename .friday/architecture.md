@@ -19,8 +19,8 @@ hosted provider execution is not.
 - **CLI commands** — dispatch command-line workflows. Implemented commands are
   `friday init`, `friday global init`, `friday status`, `friday evidence`,
   `friday plan`, `friday review`, `friday route`, `friday cost`,
-  `friday usage`, `friday doctor`, `friday local setup`, `friday run`, and
-  `friday execute`.
+  `friday usage`, `friday outcome`, `friday doctor`, `friday local setup`,
+  `friday run`, and `friday execute`.
 - **Core project memory** — defines the `.friday/` file set, creates templates,
   checks project status, and loads existing memory files.
 - **Core global memory** — loads optional reusable developer context and provides
@@ -50,9 +50,11 @@ hosted provider execution is not.
 - **Execution and usage** — applies reasoning-aware output allowances, allows one
   bounded context-safe retry for an implicit ceiling, writes local results, and
   appends metadata-only success or failure records without prompts or hidden
-  reasoning. Read-only usage reporting totals recorded tokens and advisory cost,
+  reasoning. `friday outcome` appends a separate structured developer judgement;
+  latest-event-wins summary semantics keep it distinct from provider execution
+  status. Read-only usage reporting totals recorded tokens and advisory cost,
   filters by completion time, groups by workflow or provider/model, and reports
-  current-project hosted-cost budget state from the same history.
+  current-project hosted-cost budget state from execution history.
 - **Hosted budget policy** — parses versioned global and project JSON policies,
   resolves restrictive thresholds deterministically, evaluates calendar-month
   advisory hosted usage, and defines acknowledgement/override metadata for a
@@ -125,12 +127,25 @@ hosted provider execution is not.
 
 1. The CLI reads `.friday/runtime/execution-log.jsonl` through the existing
    usage-domain helper.
-2. An optional `--since` filter selects records by completion time.
-3. The shared summary helper totals real recorded tokens, advisory cost, results,
-   retries, escalations, workflows, and provider/models. `--budget` instead
+2. It also reads `.friday/runtime/outcome-log.jsonl`; outcome events are
+   append-only, and the latest event for an execution is the effective developer
+   judgement rather than its provider execution status.
+3. An optional `--since` filter selects records by completion time.
+4. The shared summary helper totals real recorded tokens, advisory cost, results,
+   retries, developer outcomes, workflows, and provider/models. `--budget` instead
    evaluates hosted routes in the same history against optional policy files.
-4. The command prints metadata only and never mutates history or displays prompts,
+5. The command prints metadata only and never mutates history or displays prompts,
    responses, secrets, or private snippets.
+
+## Data Flow: `friday outcome`
+
+1. The CLI resolves an exact execution identifier, or displays the selected
+   metadata and asks for confirmation when interactive `latest` is used.
+2. It appends the selected structured status to
+   `.friday/runtime/outcome-log.jsonl` without prompts, responses, or free-text
+   notes.
+3. Later events retain prior history but supersede the effective outcome reported
+   by `friday usage`.
 
 ## Important Boundaries
 
@@ -148,7 +163,8 @@ hosted provider execution is not.
   routing, or approval.
 - **Local context versus hosted services:** routing and privacy logic exists, but
   future provider execution must apply those gates before any context is sent
-  outside the developer environment.
+  outside the developer environment. Hosted budget evaluation and preflight
+  contracts exist, but no hosted provider is currently invoked.
 - **Global versus project memory:** optional reusable developer preferences live
   under `~/.friday/`; repository context lives under `.friday/`. Machine-level
   provider configuration is global configuration, not prompt memory.
